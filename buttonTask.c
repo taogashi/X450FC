@@ -64,7 +64,7 @@ void vButtonEXTIHandler(void* vParameter)
 					SYSMODE = MODE1;
 					Blinks(LED1,1);
 					sprintf(printf_buffer, "set to MODE%d\r\n",SYSMODE+1);
-					Uart2Send(printf_buffer, strlen(printf_buffer));
+					UartSend(printf_buffer, strlen(printf_buffer));
 					state = 0;					
 				}
 				lastEXTItime = sysTime;	
@@ -79,7 +79,7 @@ void vButtonEXTIHandler(void* vParameter)
 						SYSMODE = MODE3;
 						Blinks(LED1,3);
 						sprintf(printf_buffer, "set to MODE%d\r\n",SYSMODE+1);
-						Uart2Send(printf_buffer, strlen(printf_buffer));
+						UartSend(printf_buffer, strlen(printf_buffer));
 					}
 				}
 				else
@@ -87,7 +87,7 @@ void vButtonEXTIHandler(void* vParameter)
 					SYSMODE = MODE2;
 					Blinks(LED1,2);
 					sprintf(printf_buffer,"set to MODE%d\r\n",SYSMODE+1);	
-					Uart2Send(printf_buffer, strlen(printf_buffer));
+					UartSend(printf_buffer, strlen(printf_buffer));
 				}
 				state = 0;
 				lastEXTItime = sysTime;	

@@ -74,7 +74,7 @@ void vDiskOperation(void* vParameter)
 	if(res != FR_OK)
 	{
 		sprintf(printf_buffer, "failed to open file!\r\n");
-		Uart2Send(printf_buffer, strlen(printf_buffer));
+		UartSend(printf_buffer, strlen(printf_buffer));
 	}
 	else
 	{
@@ -126,7 +126,7 @@ void vDiskOperation(void* vParameter)
 			if(res != FR_OK)
 			{
 				sprintf(printf_buffer, "failed to open file!\r\n");
-				Uart2Send(printf_buffer, strlen(printf_buffer));
+				UartSend(printf_buffer, strlen(printf_buffer));
 			}
 			res = f_lseek(&paraFile, 0);
 			//写入悬停时的油门

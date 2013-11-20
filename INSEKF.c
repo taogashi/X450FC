@@ -10,6 +10,7 @@
 #include "axisTrans.h"
 #include "diskTask.h"
 #include "ledTask.h"
+#include "ultraSonic.h"
 
 /***********************macro definition*************************/
 #define GPS_DELAY_CNT 134
@@ -132,13 +133,21 @@ void vINSAligTask(void* pvParameters)
 {
 	char printf_buffer[100];
 	
-	u16 GPS_validate_cnt=0;
+	/*odometry sensor data*/
 	float direction;
 	u8 temp;
 	float *p_insBuffer;
 	GPSDataType gdt;
+	u16 GPS_validate_cnt=0;
+	float uw_height;
+	
 	portBASE_TYPE xstatus;
-		
+	
+	/*Enable ultrasonic sensor TIMER*/
+	TIM2_Config();
+	TIM2_IT_Config();
+	
+	/**/
 	xQueueReceive(AHRSToINSQueue,&p_insBuffer,portMAX_DELAY);	//capture an INS frame	 
 	p_insBuffer[INDEX_DT]=0.0;	//the last number in buffer represent time interval, not time
 	Blinks(LED1,2);
@@ -185,6 +194,11 @@ void vINSAligTask(void* pvParameters)
 		if(xstatus == pdPASS)
 		{
 			GPS_validate_cnt ++;
+		}
+		if(GetUltraSonicMeasure(&uw_height))
+		{
+			sprintf(printf_buffer,"%1.3f\r\n",uw_height);
+			UartSend(printf_buffer,7);
 		}
 		
 		/*receive ins data and fill the IMU_delay_buffer*/
@@ -234,7 +248,7 @@ void vINSAligTask(void* pvParameters)
 	if(xstatus!=pdTRUE)
 	{
 		sprintf(printf_buffer, "failed to initialize\r\n");
-		Uart2Send(printf_buffer, strlen(printf_buffer));
+		UartSend(printf_buffer, strlen(printf_buffer));
 	}
 	vTaskDelete(NULL);
 }

@@ -250,7 +250,7 @@ void PosControl(OrderType* odt,PosConDataType* pcdt,AttConDataType *acdt,Optiona
 			else if(odt->rollOrder < -0.18) odt->rollOrder=-0.18;
 			
 			sprintf(printf_buffer,"%.2f %.2f\r\n",xPosErr,yPosErr);
-			Uart2Send(printf_buffer,strlen(printf_buffer));
+			UartSend(printf_buffer,strlen(printf_buffer));
 		}	
 		else
 		{
@@ -350,25 +350,25 @@ void vFlyConTask(void* pvParameters)
 
 	//at this stage, flightConTask wait parameters read form disk
 	sprintf(printf_buffer, "load para...\r\n");
-	Uart2Send(printf_buffer, strlen(printf_buffer));
+	UartSend(printf_buffer, strlen(printf_buffer));
 	xdisk_read_status = xQueueReceive(xDiskWrQueue1,&OP,(portTickType)(5000/portTICK_RATE_MS));
 	if(xdisk_read_status == pdPASS)
 	{
 		sprintf(printf_buffer, "OK!\r\n");
-		Uart2Send(printf_buffer, 5);
+		UartSend(printf_buffer, 5);
 		sprintf(printf_buffer,PID_FORMAT_OUT
 					,OP.rollP,OP.rollD,OP.rollI
 					,OP.yawP,OP.yawD1,OP.yawD2,OP.yawI
 					,OP.horiP,OP.horiD,OP.horiI
 					,OP.heightP,OP.heightD,OP.heightI);
-		Uart2Send(printf_buffer, strlen(printf_buffer));
+		UartSend(printf_buffer, strlen(printf_buffer));
 		Blinks(LED1,1);
 	}
 	//if fails, read from uart
 	else
 	{
 		sprintf(printf_buffer,"failed to read parameters!\r\n");
-		Uart2Send(printf_buffer, strlen(printf_buffer));
+		UartSend(printf_buffer, strlen(printf_buffer));
 		while(xdisk_read_status != pdPASS)
 		{
 			xstatus = xQueueReceive(xUartParaQueue,&tempOP,0);
@@ -484,7 +484,7 @@ void vFlyConTask(void* pvParameters)
 		{
 			CNT=0;
 //			sprintf(printf_buffer,"%.2f %.2f %.2f\r\n",acdt.rollAngleRate*57.3,acdt.pitchAngleRate*57.3,acdt.yawAngleRate*57.3);
-//			Uart2Send(printf_buffer,strlen(printf_buffer));
+//			UartSend(printf_buffer,strlen(printf_buffer));
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}

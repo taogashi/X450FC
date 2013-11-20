@@ -118,7 +118,7 @@ void vUartRecTask(void* pvParameters)
 					,OP.yawP,OP.yawD1,OP.yawD2,OP.yawI
 					,(OP.horiP),(OP.horiD),(OP.horiI)
 					,OP.heightP,OP.heightD,OP.heightI);
-				Uart2Send(buffer, strlen(buffer));
+				UartSend(buffer, strlen(buffer));
 				curTime = lastTime = xTaskGetTickCount();
 				while(uart2Flag==0 && curTime-lastTime<20000)
 				{
@@ -133,21 +133,21 @@ void vUartRecTask(void* pvParameters)
 					{
 						OP.checksum = 0;
 						sprintf(buffer,"OK!\r\n");
-						Uart2Send(buffer, 5);
+						UartSend(buffer, 5);
 						xQueueSend(xUartParaQueue,&OP,portMAX_DELAY);
 						sprintf(buffer, "loaded!\r\n");
-						Uart2Send(buffer, 9);
+						UartSend(buffer, 9);
 					}
 					else
 					{
 						sprintf(buffer,"abort!\r\n");
-						Uart2Send(buffer, 8);
+						UartSend(buffer, 8);
 					}
 				}
 				else
 				{
 					sprintf(buffer,"abort!\r\n");
-					Uart2Send(buffer, 8);
+					UartSend(buffer, 8);
 				}
 			}
 			else if((keyword=strstr(buffer,"Neutral")) != NULL)
@@ -158,7 +158,7 @@ void vUartRecTask(void* pvParameters)
 				sprintf(buffer, NEUTRAL_FORMAT_OUT
 					,(OP.hoverThrust)
 					,(OP.RCneutral[0]),(OP.RCneutral[1]),(OP.RCneutral[2]),(OP.RCneutral[3]));
-				Uart2Send(buffer,strlen(buffer));
+				UartSend(buffer,strlen(buffer));
 				curTime = lastTime = xTaskGetTickCount();
 				while(uart2Flag==0 && curTime-lastTime<20000)
 				{
@@ -173,21 +173,21 @@ void vUartRecTask(void* pvParameters)
 					{
 						OP.checksum = 1;
 						sprintf(buffer, "OK!\r\n");
-						Uart2Send(buffer, 5);
+						UartSend(buffer, 5);
 						xQueueSend(xUartParaQueue,&OP,portMAX_DELAY);
 						sprintf(buffer, "loaded!\r\n");
-						Uart2Send(buffer, 9);
+						UartSend(buffer, 9);
 					}
 					else
 					{
 						sprintf(buffer, "abort!\r\n");
-						Uart2Send(buffer, 8);
+						UartSend(buffer, 8);
 					}
 				}
 				else
 				{
 					sprintf(buffer, "abort!\r\n");
-					Uart2Send(buffer, 8);
+					UartSend(buffer, 8);
 				}
 			}
 			else if((keyword=strstr(buffer,"Waypoint")) != NULL)
@@ -198,7 +198,7 @@ void vUartRecTask(void* pvParameters)
 				sprintf(buffer, WAYPOINT_FORMAT_OUT
 						,(wpt.properties),(wpt.maxSpeed),(wpt.time),(wpt.posAcrcy)
 						,(wpt.x),(wpt.y),(wpt.height),(wpt.yaw));
-				Uart2Send(buffer, strlen(buffer));
+				UartSend(buffer, strlen(buffer));
 				if(wpt.properties == 1)
 				{
 					xQueueSendToFront(xUartWayPointQueue,&wpt,0);
@@ -302,8 +302,8 @@ void vUartRecTask(void* pvParameters)
 			}
 		}
 //		sprintf(buffer, "hello world\r\n");
-//		Uart2Send(buffer, strlen(buffer));
-		vTaskDelay((portTickType)(50/portTICK_RATE_MS));
+//		UartSend(buffer, strlen(buffer));
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
 	}
 }
 
