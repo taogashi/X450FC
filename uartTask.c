@@ -19,6 +19,37 @@ char uart2Cache2[100];
 char uart3Cache1[200];
 char uart3Cache2[200];
 
+#if USE_USART1
+void USART1_IRQHandler(void)
+{
+	static u8 byteCNT=0;
+	char byteRec;
+//	u8 i;
+	if(USART_GetFlagStatus(USART1,USART_FLAG_ORE)!=RESET) 
+	{
+		USART_ClearFlag(USART1, USART_FLAG_ORE);
+		USART_ReceiveData(USART1);
+		byteCNT=0;
+	} 
+	if(USART_GetITStatus(USART1,USART_IT_RXNE)!=RESET)
+	{
+		byteRec=USART_ReceiveData(USART1);
+		if(byteRec != '\r' && byteRec!='\n')
+		{	
+			uart2Cache1[byteCNT++]=byteRec;
+			if(byteCNT>=100) byteCNT=0;
+		}
+		else
+		{	
+			uart2Cache1[byteCNT]='\0';
+			memcpy(uart2Cache2,uart2Cache1,byteCNT+1);
+			uart2Flag=1;
+			byteCNT = 0;
+		}
+		USART_ClearITPendingBit(USART1,USART_IT_RXNE);
+	}
+}
+#else
 void USART2_IRQHandler(void)
 {
 	static u8 byteCNT=0;
@@ -48,6 +79,7 @@ void USART2_IRQHandler(void)
 		USART_ClearITPendingBit(USART2,USART_IT_RXNE);
 	}
 }
+#endif
 
 void USART3_IRQHandler(void)
 {

@@ -78,6 +78,7 @@ void GyrDebur(float *gyr)
 void vSenAHRSRead(void* pvParameters)
 {
 	SensorDataType* pSDT;
+	float gyr_offset[3]={0.0};
 
 	portBASE_TYPE xstatus;
 	u8 i;
@@ -91,7 +92,25 @@ void vSenAHRSRead(void* pvParameters)
 	}
 	RTOS_EXIT_CRITICAL();
 	pSDT = &localSDT;
-	vTaskDelay((portTickType)(1000/portTICK_RATE_MS));
+	vTaskDelay((portTickType)(3000/portTICK_RATE_MS));
+	
+	/*calculate gyro offset*/
+	for(i=0; i<100; i++)
+	{
+		RTOS_ENTER_CRITICAL();
+		ADIS16405_Burst_Read(&localSDT);
+		RTOS_EXIT_CRITICAL();
+		
+		gyr_offset[0] += localSDT.gyr[0];
+		gyr_offset[1] += localSDT.gyr[1];
+		gyr_offset[2] += localSDT.gyr[2];
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
+	
+	gyr_offset[0] *= 0.01;
+	gyr_offset[1] *= 0.01;
+	gyr_offset[2] *= 0.01;
+	
 	for(;;)
 	{
 		//ahrs data capture in 250Hz(4ms one period)
@@ -102,6 +121,10 @@ void vSenAHRSRead(void* pvParameters)
 			RTOS_ENTER_CRITICAL();
 			ADIS16405_Burst_Read(&sdt);
 			RTOS_EXIT_CRITICAL();
+			
+			sdt.gyr[0] -= gyr_offset[0];
+			sdt.gyr[1] -= gyr_offset[1];
+			sdt.gyr[2] -= gyr_offset[2];
 
 			for(i=0;i<3;i++)
 			{				
@@ -116,6 +139,10 @@ void vSenAHRSRead(void* pvParameters)
 		RTOS_ENTER_CRITICAL();
 		ADIS16405_Burst_Read(&localSDT);
 		RTOS_EXIT_CRITICAL();
+		localSDT.gyr[0] -= gyr_offset[0];
+		localSDT.gyr[1] -= gyr_offset[1];
+		localSDT.gyr[2] -= gyr_offset[2];
+		
 		pSDT = &localSDT;
 	}
 }

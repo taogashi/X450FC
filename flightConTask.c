@@ -483,8 +483,8 @@ void vFlyConTask(void* pvParameters)
 		if(CNT++>=10)
 		{
 			CNT=0;
-//			sprintf(printf_buffer,"%.2f %.2f %.2f\r\n",acdt.rollAngleRate*57.3,acdt.pitchAngleRate*57.3,acdt.yawAngleRate*57.3);
-//			UartSend(printf_buffer,strlen(printf_buffer));
+			sprintf(printf_buffer,"%.2f %.2f %.2f\r\n",acdt.rollAngleRate*57.3,acdt.pitchAngleRate*57.3,acdt.yawAngleRate*57.3);
+			UartSend(printf_buffer,strlen(printf_buffer));
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}

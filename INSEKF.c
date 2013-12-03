@@ -197,8 +197,8 @@ void vINSAligTask(void* pvParameters)
 		}
 		if(GetUltraSonicMeasure(&uw_height))
 		{
-			sprintf(printf_buffer,"%1.3f\r\n",uw_height);
-			UartSend(printf_buffer,7);
+//			sprintf(printf_buffer,"%1.3f\r\n",uw_height);
+//			UartSend(printf_buffer,7);
 		}
 		
 		/*receive ins data and fill the IMU_delay_buffer*/

@@ -160,8 +160,8 @@ static void prvSetupHardware( void )
 	TIM3_Config();
 	TIM4_Config();
 	TIM5_Config();
-	USART1_DMA_Config();
-	USART1_DMA_IT_Config();
+	USART2_DMA_Config();
+	USART2_DMA_IT_Config();
 }
 /*-----------------------------------------------------------*/
 

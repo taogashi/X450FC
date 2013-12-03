@@ -3,7 +3,7 @@
 
 #include "stm32f4xx.h"
 
-#define USE_USART1 1
+#define USE_USART1 0
 
 #if USE_USART1
 void USART1_DMA_Config(void);
