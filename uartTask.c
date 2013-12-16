@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 xQueueHandle xUartGPSQueue;
+xQueueHandle xUartVisionQueue;
 xQueueHandle xUartParaQueue;
 xQueueHandle xUartWayPointQueue;
 

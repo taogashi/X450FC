@@ -9,12 +9,15 @@
   
 /* Includes */
 #include "stm32f4xx.h"
+#include "OSConfig.h"
 
 /**
 * @addtogroup ADIS16405 
 * @{
 */
-
+	 
+#define ADIS16405_SPI_INT_MODE
+	 
 #define ADIS16405_SPI                	SPI1
 #define ADIS16405_SPI_RCC_Periph     	RCC_APB2Periph_SPI1
 #define ADIS16405_SPI_RCC_Port			RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOA
@@ -41,6 +44,10 @@
 
 //128~656kHz
 #define ADIS16405_SPI_BaudRatePrescaler	SPI_BaudRatePrescaler_128	
+
+#define ADIS16405_INT_PRIOR 	configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY-3 //configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY=5
+#define ADIS16405_IRQChannel 	SPI1_IRQn
+#define ADIS16405_IRQHandler	SPI1_IRQHandler
 
 
 #endif /* __HAL_ADIS16405_H */

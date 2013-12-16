@@ -33,7 +33,7 @@ void TIM2_Config(void) //PWM正脉宽捕获
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_TIM2);
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_TIM2);
 
-	TIM_BaseInitStructure.TIM_Period = 4000; //30ms       //定时器2计时周期   
+	TIM_BaseInitStructure.TIM_Period = 4000; //40ms       //定时器2计时周期   
     TIM_BaseInitStructure.TIM_Prescaler = (uint16_t) ((SystemCoreClock/2) / 100000) - 1; //10us       
     TIM_BaseInitStructure.TIM_ClockDivision = 0;     
     TIM_BaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;    //向上计数

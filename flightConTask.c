@@ -192,7 +192,7 @@ void PosControl(OrderType* odt,PosConDataType* pcdt,AttConDataType *acdt,Optiona
 
 	float xPID,yPID;
 	
-	char printf_buffer[100];
+//	char printf_buffer[100];
 	//¸ß¶È¿ØÖÆ
 //	if(odt->thrustOrder<0.05) odt->thrustOut=0;
 //	else
@@ -249,8 +249,8 @@ void PosControl(OrderType* odt,PosConDataType* pcdt,AttConDataType *acdt,Optiona
 			if(odt->rollOrder > 0.18) odt->rollOrder=0.18;
 			else if(odt->rollOrder < -0.18) odt->rollOrder=-0.18;
 			
-			sprintf(printf_buffer,"%.2f %.2f\r\n",xPosErr,yPosErr);
-			UartSend(printf_buffer,strlen(printf_buffer));
+//			sprintf(printf_buffer,"%.2f %.2f\r\n",xPosErr,yPosErr);
+//			UartSend(printf_buffer,strlen(printf_buffer));
 		}	
 		else
 		{
@@ -483,7 +483,7 @@ void vFlyConTask(void* pvParameters)
 		if(CNT++>=10)
 		{
 			CNT=0;
-			sprintf(printf_buffer,"%.2f %.2f %.2f\r\n",acdt.rollAngleRate*57.3,acdt.pitchAngleRate*57.3,acdt.yawAngleRate*57.3);
+			sprintf(printf_buffer,"%.2f %.2f %.2f\r\n",acdt.rollAngle*57.3,acdt.pitchAngle*57.3,acdt.yawAngle*57.3);
 			UartSend(printf_buffer,strlen(printf_buffer));
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));

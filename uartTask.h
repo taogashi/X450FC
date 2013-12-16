@@ -65,7 +65,15 @@ typedef struct
 	u8 type;
 }GPSDataType;
 
+typedef struct
+{
+	float pos_x;
+	float pos_y;
+	float pos_z;
+}VisionDataType;
+
 extern xQueueHandle xUartGPSQueue;
+extern xQueueHandle xUartVisionQueue;
 extern xQueueHandle xUartParaQueue;
 extern xQueueHandle xUartWayPointQueue;
 

@@ -4,6 +4,8 @@
 #include <arm_math.h>
 #include "stm32f4xx.h"
 
+#include "UART.h"
+#include "string.h"
 #include "uartTask.h"
 #include "AHRSEKF.h"
 #include "kalman.h"
@@ -13,7 +15,7 @@
 #include "ultraSonic.h"
 
 /***********************macro definition*************************/
-#define GPS_DELAY_CNT 134
+#define GPS_DELAY_CNT 4
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
@@ -50,12 +52,10 @@ const float iQ[81]={
 		,0,0,0,0,0,0,0,0,0.000000004096
 };	//used to initialize EKF filter structure
 
-const float iR[25]={
-		 100,0,0,0,0
-		,0,100,0,0,0
-		,0,0,225,0,0
-		,0,0,0,0.25,0
-		,0,0,0,0,0.25
+const float iR[9]={
+		 10,0,0
+		,0,10,0
+		,0,0,0.1
 };	//used to initialize EKF filter structure
 
 /*
@@ -134,11 +134,10 @@ void vINSAligTask(void* pvParameters)
 	char printf_buffer[100];
 	
 	/*odometry sensor data*/
-	float direction;
-	u8 temp;
 	float *p_insBuffer;
-	GPSDataType gdt;
-	u16 GPS_validate_cnt=0;
+//	VisionDataType vdt;
+	u16 vision_validate_cnt=0;
+	
 	float uw_height;
 	
 	portBASE_TYPE xstatus;
@@ -152,18 +151,27 @@ void vINSAligTask(void* pvParameters)
 	p_insBuffer[INDEX_DT]=0.0;	//the last number in buffer represent time interval, not time
 	Blinks(LED1,2);
 
-#ifdef INS_DEBUG
+#ifdef INS_DEBUG	
 	/*GPS data is not needed in debug mode*/
-	while(1)
+	while(1)	//vision_validate_cnt < 10
 	{		
 		/*receive ins data and fill the IMU_delay_buffer*/
 		xQueueReceive(AHRSToINSQueue,&p_insBuffer,portMAX_DELAY);
 		PutToBuffer(p_insBuffer);
 		/*clear time interval*/
 		p_insBuffer[INDEX_DT]=0.0;
-		/*INS_delay_buffer is full filled*/
-		if(buffer_header == 0) break;
+		
+		if(GetUltraSonicMeasure(&uw_height))
+		{
+			//vision_validate_cnt ++;
+			sprintf(printf_buffer,"%.2f\r\n",uw_height);
+			UartSend(printf_buffer,strlen(printf_buffer));
+		}
 	}
+
+	initPos[0] = 0.0;
+	initPos[1] = 0.0;
+	initPos[2] = uw_height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
@@ -188,18 +196,14 @@ void vINSAligTask(void* pvParameters)
 	//normol mode
 	
 	/*wait while GPS signal not stable*/
-	while(GPS_validate_cnt<=100)
+	while(vision_validate_cnt<=100)
 	{
-		xstatus = xQueueReceive(xUartGPSQueue,&gdt,0);
+		xstatus = xQueueReceive(xUartVisionQueue,&vdt,0);
 		if(xstatus == pdPASS)
 		{
-			GPS_validate_cnt ++;
+			vision_validate_cnt ++;
 		}
-		if(GetUltraSonicMeasure(&uw_height))
-		{
-//			sprintf(printf_buffer,"%1.3f\r\n",uw_height);
-//			UartSend(printf_buffer,7);
-		}
+		GetUltraSonicMeasure(&uw_height);
 		
 		/*receive ins data and fill the IMU_delay_buffer*/
 		xQueueReceive(AHRSToINSQueue,&p_insBuffer,portMAX_DELAY);
@@ -209,19 +213,9 @@ void vINSAligTask(void* pvParameters)
 	}
 
 	/************initialize navParamK*********************/
-	temp=(u8)(gdt.Lati*0.01);
-	initPos[0]=0.01745329*(temp+(gdt.Lati-temp*100.0)*0.0166667);
-
-	temp=(u8)(gdt.Long*0.01);
-	initPos[1]=0.01745329*(temp+(gdt.Long-temp*100.0)*0.0166667);
-	initPos[2]=gdt.Alti;
-
-	if(gdt.type != GPGMV)
-	{
-		direction = gdt.COG*0.0174533;
-		gdt.speedN = gdt.SPD*0.51444*arm_cos_f32(direction);
-		gdt.speedE = gdt.SPD*0.51444*arm_sin_f32(direction);
-	}
+	initPos[0] = 0.0;
+	initPos[1] = 0.0;
+	initPos[2] = uw_height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
@@ -266,23 +260,24 @@ void vIEKFProcessTask(void* pvParameters)
 	ekf_filter filter;	
 	float dt;
 	
-	float measure[5]={0};
+	float measure[3]={0};
 	float insBufferK[INS_FRAME_LEN];
 	float insBufferCur[INS_FRAME_LEN];
 	float *p_insBuffer;
 
-	float direction;
-	u8 temp;
-	GPSDataType gdt={0.0,0.0,0.0,0.0,0.0};
-	portBASE_TYPE xstatus;
+	float uw_height;
+
+	VisionDataType vdt={0.0,0.0,0.0};
+//	portBASE_TYPE xstatus;
 	
 	PosConDataType pcdt;	//position message send to flight control task
 
 	/*initial filter*/
-	filter=ekf_filter_new(9,5,(float *)iQ,(float *)iR,INS_GetA,INS_GetH,INS_aFunc,INS_hFunc);
+	filter=ekf_filter_new(9,3,(float *)iQ,(float *)iR,INS_GetA,INS_GetH,INS_aFunc,INS_hFunc);
 	memcpy(filter->x,x,filter->state_dim*sizeof(float));
 	memcpy(filter->P,iP,filter->state_dim*filter->state_dim*sizeof(float));
 
+	GetUltraSonicMeasure(&uw_height);
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&p_insBuffer,portMAX_DELAY);
 	/*last number in buffer represent time interval, not time */
@@ -318,24 +313,17 @@ void vIEKFProcessTask(void* pvParameters)
 					, (void *)(filter->A)
 					, NULL);
 			
-		xstatus=xQueueReceive(xUartGPSQueue,&gdt,0);	//get measurement data
-		if(xstatus == pdPASS)
+//		xstatus=xQueueReceive(xUartVisionQueue,&vdt,0);	//get measurement data
+		if(GetUltraSonicMeasure(&uw_height))
 		{
-			float meas_Err[5]={0.0};
+			float meas_Err[3]={0.0};
 			
-			direction = gdt.COG*0.0174533;
-
-			temp=(u8)(gdt.Lati*0.01);
-			measure[0]=(0.01745329*(temp+(gdt.Lati-temp*100.0)*0.0166667)-initPos[0])*6371004;
 			
-			temp=(u8)(gdt.Long*0.01);
-			measure[1]=(0.01745329*(temp+(gdt.Long-temp*100.0)*0.0166667)-initPos[1])*4887077;
+			measure[0] = vdt.pos_x;
+			measure[1] = vdt.pos_y;
+			measure[2] = uw_height-initPos[2];
 			
-			measure[2]=gdt.Alti-initPos[2];
-			measure[3]=gdt.SPD*0.51444*arm_cos_f32(direction);
-			measure[4]=gdt.SPD*0.51444*arm_sin_f32(direction);
-			
-			for(i=0;i<5;i++)
+			for(i=0;i<3;i++)
 			{
 				meas_Err[i] = navParamK[i] - measure[i];
 			}
@@ -350,11 +338,11 @@ void vIEKFProcessTask(void* pvParameters)
 //											navParamK[3],navParamK[4]);
 //			xQueueSend(xDiskLogQueue,logData,0);
 			
-			sprintf(logData, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
-							measure[0],measure[1],measure[3],measure[4],
-							navParamK[0],navParamK[1],navParamK[3],navParamK[4],
-							navParamCur[0],navParamCur[1],navParamCur[3],navParamCur[4]);
-			xQueueSend(xDiskLogQueue,logData,0);
+//			sprintf(logData, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
+//							measure[0],measure[1],measure[3],measure[4],
+//							navParamK[0],navParamK[1],navParamK[3],navParamK[4],
+//							navParamCur[0],navParamCur[1],navParamCur[3],navParamCur[4]);
+//			xQueueSend(xDiskLogQueue,logData,0);
 			/*update*/
 			EKF_update(filter
 						, (void *)meas_Err
@@ -465,9 +453,9 @@ void INS_GetA(float *A,void *para1,void *para2,void *para3)
 
 void INS_GetH(float *H,void *para1,void *para2)
 {
-	memset(H,0,180);
+	memset(H,0,108);
 
-	H[0]=1;H[10]=1;H[20]=1;H[30]=1;H[40]=1;H[51]=1;H[61]=1;H[71]=1;
+	H[0]=1;H[10]=1;H[20]=1;
 }
 
 void INS_aFunc(float *x,void *para4,void *para5)
@@ -506,8 +494,6 @@ void INS_hFunc(float *hx,void *para3,void *para4)
 	hx[0]=x[0];
 	hx[1]=x[1];
 	hx[2]=x[2];
-	hx[3]=x[3];
-	hx[4]=x[4];
 }
 
 void INS_Update(float *navParam, float *IMU_data)
