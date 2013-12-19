@@ -6,7 +6,7 @@
 #include "OSConfig.h"
 #include <string.h>
 
-extern xQueueHandle xDiskWrQueue1;
+extern xQueueHandle xDiskParamQueue;
 extern xQueueHandle xDiskLogQueue;
 void vDiskOperation(void* vParameter);
 

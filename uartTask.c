@@ -6,8 +6,9 @@
 
 xQueueHandle xUartGPSQueue;
 xQueueHandle xUartVisionQueue;
-xQueueHandle xUartParaQueue;
 xQueueHandle xUartWayPointQueue;
+
+xQueueHandle xUartParaQueue;
 
 //收到一帧数据后，将标志位置1
 //读取后将标志位清零
@@ -120,16 +121,21 @@ void vUartRecTask(void* pvParameters)
 {
 	char buffer[100];
 	char *keyword;
+	u16 string_len;
+	u16 index;
+	u16 dummy;
+	
 	GGATypeDef ggaData;
 	RMCTypeDef rmcData;
 	GMVTypeDef gmvData;
 
 	GPSDataType gpsData;
-	portTickType lastTime;
-	portTickType curTime;
-	OptionalPara OP;
+	
 	WayPointType wpt;
 
+	portTickType lastTime;
+	portTickType curTime;
+	
 	USART3_Config();
 	USART3_IT_Config();
 	
@@ -141,17 +147,17 @@ void vUartRecTask(void* pvParameters)
 			uart2Flag=0;
 			if((keyword=strstr(buffer,"PID")) != NULL)
 			{
+				sscanf(keyword, "PID,%hu", &index);
 				sscanf(keyword,PID_FORMAT_IN
-						,&(OP.rollP),&(OP.rollD),&(OP.rollI)
-						,&(OP.yawP),&(OP.yawD1),&(OP.yawD2),&(OP.yawI)
-						,&(OP.horiP),&(OP.horiD),&(OP.horiI)
-						,&(OP.heightP),&(OP.heightD),&(OP.heightI));
-				sprintf(buffer,PID_FORMAT_OUT
-					,OP.rollP,OP.rollD,OP.rollI
-					,OP.yawP,OP.yawD1,OP.yawD2,OP.yawI
-					,(OP.horiP),(OP.horiD),(OP.horiI)
-					,OP.heightP,OP.heightD,OP.heightI);
-				UartSend(buffer, strlen(buffer));
+						,&dummy
+						,&(optional_param_global.loop_pid[index].xPID[0]), &(optional_param_global.loop_pid[index].xPID[1]), &(optional_param_global.loop_pid[index].xPID[2])
+						,&(optional_param_global.loop_pid[index].yPID[0]), &(optional_param_global.loop_pid[index].yPID[1]), &(optional_param_global.loop_pid[index].yPID[2])
+						,&(optional_param_global.loop_pid[index].zPID[0]), &(optional_param_global.loop_pid[index].zPID[1]), &(optional_param_global.loop_pid[index].zPID[2]));
+				string_len = sprintf(buffer,PID_FORMAT_OUT
+					,index, optional_param_global.loop_pid[index].xPID[0], optional_param_global.loop_pid[index].xPID[1], optional_param_global.loop_pid[index].xPID[2]
+					,optional_param_global.loop_pid[index].yPID[0], optional_param_global.loop_pid[index].yPID[1], optional_param_global.loop_pid[index].yPID[2]
+					,optional_param_global.loop_pid[index].zPID[0], optional_param_global.loop_pid[index].zPID[1], optional_param_global.loop_pid[index].zPID[2]);
+				UartSend(buffer, string_len);
 				curTime = lastTime = xTaskGetTickCount();
 				while(uart2Flag==0 && curTime-lastTime<20000)
 				{
@@ -164,34 +170,34 @@ void vUartRecTask(void* pvParameters)
 					uart2Flag=0;
 					if((keyword=strstr(buffer,"OK")) != NULL)
 					{
-						OP.checksum = 0;
-						sprintf(buffer,"OK!\r\n");
-						UartSend(buffer, 5);
-						xQueueSend(xUartParaQueue,&OP,portMAX_DELAY);
-						sprintf(buffer, "loaded!\r\n");
-						UartSend(buffer, 9);
+
+						string_len = sprintf(buffer,"OK!\r\n");
+						UartSend(buffer, string_len);
+						
+						xQueueSend(xUartParaQueue,&index, portMAX_DELAY);
+						string_len = sprintf(buffer, "loaded!\r\n");
+						UartSend(buffer, string_len);
 					}
 					else
 					{
-						sprintf(buffer,"abort!\r\n");
-						UartSend(buffer, 8);
+						string_len = sprintf(buffer,"abort!\r\n");
+						UartSend(buffer, string_len);
 					}
 				}
 				else
 				{
-					sprintf(buffer,"abort!\r\n");
-					UartSend(buffer, 8);
+					string_len = sprintf(buffer,"abort!\r\n");
+					UartSend(buffer, string_len);
 				}
 			}
 			else if((keyword=strstr(buffer,"Neutral")) != NULL)
 			{
+				index = 4;
 				sscanf(keyword,NEUTRAL_FORMAT_IN
-						,&(OP.hoverThrust)
-						,&(OP.RCneutral[0]),&(OP.RCneutral[1]),&(OP.RCneutral[2]),&(OP.RCneutral[3]));
-				sprintf(buffer, NEUTRAL_FORMAT_OUT
-					,(OP.hoverThrust)
-					,(OP.RCneutral[0]),(OP.RCneutral[1]),(OP.RCneutral[2]),(OP.RCneutral[3]));
-				UartSend(buffer,strlen(buffer));
+						,&(optional_param_global.RCneutral[0]),&(optional_param_global.RCneutral[1]),&(optional_param_global.RCneutral[2]),&(optional_param_global.RCneutral[3]));
+				string_len = sprintf(buffer, NEUTRAL_FORMAT_OUT
+					,(optional_param_global.RCneutral[0]),(optional_param_global.RCneutral[1]),(optional_param_global.RCneutral[2]),(optional_param_global.RCneutral[3]));
+				UartSend(buffer,string_len);
 				curTime = lastTime = xTaskGetTickCount();
 				while(uart2Flag==0 && curTime-lastTime<20000)
 				{
@@ -204,23 +210,22 @@ void vUartRecTask(void* pvParameters)
 					uart2Flag=0;
 					if((keyword=strstr(buffer,"OK")) != NULL)
 					{
-						OP.checksum = 1;
-						sprintf(buffer, "OK!\r\n");
-						UartSend(buffer, 5);
-						xQueueSend(xUartParaQueue,&OP,portMAX_DELAY);
-						sprintf(buffer, "loaded!\r\n");
-						UartSend(buffer, 9);
+						string_len = sprintf(buffer, "OK!\r\n");
+						UartSend(buffer, string_len);
+						xQueueSend(xUartParaQueue, &index, portMAX_DELAY);
+						string_len = sprintf(buffer, "loaded!\r\n");
+						UartSend(buffer, string_len);
 					}
 					else
 					{
-						sprintf(buffer, "abort!\r\n");
-						UartSend(buffer, 8);
+						string_len = sprintf(buffer, "abort!\r\n");
+						UartSend(buffer, string_len);
 					}
 				}
 				else
 				{
-					sprintf(buffer, "abort!\r\n");
-					UartSend(buffer, 8);
+					string_len = sprintf(buffer, "abort!\r\n");
+					UartSend(buffer, string_len);
 				}
 			}
 			else if((keyword=strstr(buffer,"Waypoint")) != NULL)

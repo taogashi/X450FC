@@ -5,7 +5,7 @@
 #include "UART.h"
 #include "sensor.h"
 
-xQueueHandle xDiskWrQueue1;
+xQueueHandle xDiskParamQueue;
 xQueueHandle xDiskLogQueue;
 
 FRESULT scanFiles(char* path)
@@ -40,6 +40,7 @@ FRESULT scanFiles(char* path)
 void vDiskOperation(void* vParameter)
 {
 	char printf_buffer[100];
+	u16 string_len;
 	
 	FATFS fs;            // Work area (file system object) for logical drive
 	FIL paraFile,logFile;      //,  file objects
@@ -49,60 +50,44 @@ void vDiskOperation(void* vParameter)
 //	char path[100]={""};  //磁盘根目录
 //
 	portBASE_TYPE xstatus;
-	char data[150];
+	char data[256];
 	unsigned int  ByteRead;
 	unsigned int  ByteWrite;
 	u8 logState=0;
-
-	OptionalPara OP={215.5,80.5,0.8 //rollPID
-			,130.5,100.4,70.3,0.5 //yawPID
-			,1.0,1.0,0.0		//horizontal pos PID
-			,0.5,0.33,0.00		//vertica pos PID
-			,0.48 				//hover thrust out
-			,1525,1525,1112,1526 //RC neutral
-			,0};  
 	
+	u16 index;
 	s16 check;
 
 	disk_initialize(0);
 	res=f_mount(0, &fs);
-
-	OP.checksum = CalChecksum(&OP);
 	
 	//open the parameter file
-	res = f_open(&paraFile,"para.txt",FA_WRITE | FA_READ | FA_OPEN_ALWAYS);
+	res = f_open(&paraFile,"quad.par",FA_WRITE | FA_READ | FA_OPEN_ALWAYS);
 	if(res != FR_OK)
 	{
-		sprintf(printf_buffer, "failed to open file!\r\n");
-		UartSend(printf_buffer, strlen(printf_buffer));
+		string_len = sprintf(printf_buffer, "failed to open file!\r\n");
+		UartSend(printf_buffer, string_len);
 	}
 	else
 	{
 		res = f_lseek(&paraFile, 0);
-		res = f_read(&paraFile,data,150,&ByteRead);
+		res = f_read(&paraFile,data,sizeof(OptionalPara),&ByteRead);
 		res = f_lseek(&paraFile, 0);
 		//valid parameter contains more than 10 bytes, no doubt
-		if(ByteRead>10)
+		if(ByteRead == sizeof(OptionalPara))
 		{
-			sscanf(data,PARA_FORMAT_IN
-					,&(OP.rollP),&(OP.rollD),&(OP.rollI)
-					,&(OP.yawP),&(OP.yawD1),&(OP.yawD2),&(OP.yawI)
-					,&(OP.horiP),&(OP.horiD),&(OP.horiI)
-					,&(OP.heightP),&(OP.heightD),&(OP.heightI)
-					,&(OP.hoverThrust)
-					,&(OP.RCneutral[0]),&(OP.RCneutral[1]),&(OP.RCneutral[2]),&(OP.RCneutral[3])
-					,&(OP.checksum));
-			check = CalChecksum(&OP);
-			if(check == OP.checksum)
+			optional_param_global = *(OptionalPara *)data;
+			check = CalChecksum(&optional_param_global);
+			if(check == optional_param_global.checksum)
 			{
 				//put parameters to the queue
-				xQueueSend(xDiskWrQueue1,&OP,0);
+				xQueueSend(xDiskParamQueue,&index,0);
 				//make sure the parameters is received by flightConTask
-				xstatus = xQueuePeek(xDiskWrQueue1,&OP,0);
+				xstatus = xQueuePeek(xDiskParamQueue,&index,0);
 				while(xstatus == pdPASS)
 				{
 					vTaskDelay((portTickType)10/portTICK_RATE_MS);
-					xstatus = xQueuePeek(xDiskWrQueue1,&OP,0);
+					xstatus = xQueuePeek(xDiskParamQueue,&index,0);
 				}
 			}		
 		}
@@ -111,26 +96,20 @@ void vDiskOperation(void* vParameter)
 	for(;;)
 	{
 		//写入参数
-		xstatus=xQueueReceive(xDiskWrQueue1,&OP,0);
+		xstatus=xQueueReceive(xDiskParamQueue,&index,0);
 		if(xstatus == pdTRUE)
 		{
-			sprintf(data,PARA_FORMAT_OUT
-					,(OP.rollP),(OP.rollD),(OP.rollI)
-					,(OP.yawP),(OP.yawD1),(OP.yawD2),(OP.yawI)
-					,(OP.horiP),(OP.horiD),(OP.horiI)
-					,(OP.heightP),(OP.heightD),(OP.heightI)
-					,(OP.hoverThrust)
-					,(OP.RCneutral[0]),(OP.RCneutral[1]),(OP.RCneutral[2]),(OP.RCneutral[3])
-					,(OP.checksum));
-			res = f_open(&paraFile,"para.txt",FA_WRITE | FA_OPEN_ALWAYS);
+			*(OptionalPara *)data = optional_param_global;
+			
+			res = f_open(&paraFile,"quad.par",FA_WRITE | FA_OPEN_ALWAYS);
 			if(res != FR_OK)
 			{
-				sprintf(printf_buffer, "failed to open file!\r\n");
-				UartSend(printf_buffer, strlen(printf_buffer));
+				string_len = sprintf(printf_buffer, "failed to open file!\r\n");
+				UartSend(printf_buffer, string_len);
 			}
 			res = f_lseek(&paraFile, 0);
 			//写入悬停时的油门
-			res = f_write(&paraFile,data,strlen(data),&ByteRead);
+			res = f_write(&paraFile,data,sizeof(OptionalPara),&ByteRead);
 			res = f_close(&paraFile);
 		}
 

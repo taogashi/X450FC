@@ -17,7 +17,7 @@ typedef struct
 	float rollAngleRate;
 	float pitchAngleRate;
 	float yawAngleRate;
-}AttConDataType;
+}AHRSDataType;
 
 extern xQueueHandle AHRSToFlightConQueue;
 extern xQueueHandle AHRSToINSQueue;

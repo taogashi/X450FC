@@ -74,8 +74,9 @@ typedef struct
 
 extern xQueueHandle xUartGPSQueue;
 extern xQueueHandle xUartVisionQueue;
-extern xQueueHandle xUartParaQueue;
 extern xQueueHandle xUartWayPointQueue;
+
+extern xQueueHandle xUartParaQueue;
 
 void vUartRecTask(void *pvParameters);
 

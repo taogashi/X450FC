@@ -5,6 +5,7 @@
 #include "kalman.h"
 #include "axisTrans.h"
 #include "sensor.h"
+#include "filter.h"
 
 xQueueHandle AHRSToFlightConQueue;
 xQueueHandle AHRSToINSQueue;
@@ -149,7 +150,7 @@ void vAEKFProcessTask(void* pvParameters)
 	SensorDataType sdtBuffer;
 
 	float *p_insBuffer=insBuffer;
-	AttConDataType acdt;
+	AHRSDataType acdt;
 	
 	filter=ekf_filter_new(4,6,Q,R,AHRS_GetA,AHRS_GetH,AHRS_aFunc,AHRS_hFunc);
 	memcpy(filter->x,bodyQuat,filter->state_dim*sizeof(float));

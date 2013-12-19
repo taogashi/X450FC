@@ -68,15 +68,16 @@ int main(void)
 	xUartGPSQueue = xQueueCreate(1,sizeof(GPSDataType));
 	
 	xUartVisionQueue = xQueueCreate(1,sizeof(VisionDataType));
-	/*uart task send the parameters to other task*/	
-	xUartParaQueue = xQueueCreate(1,sizeof(OptionalPara));
+	
+	xUartParaQueue = xQueueCreate(1, sizeof(u16));
+	
 	/*uart task send waypoint to flightConTask*/
 	xUartWayPointQueue = xQueueCreate(10,sizeof(WayPointType));
 	/*read sensor data and send to other tasks*/
 	xSenToAhrsQueue = xQueueCreate(1,sizeof(SensorDataType*));
 
 	/*AHRS should send data to flight control task to stabilize the att*/
-	AHRSToFlightConQueue = xQueueCreate(1,sizeof(AttConDataType));
+	AHRSToFlightConQueue = xQueueCreate(1,sizeof(AHRSDataType));
 	/*AHRS should send data to INS task to offer inertial data*/
 	AHRSToINSQueue = xQueueCreate(1,sizeof(float *));
 	/*INS task should send data to flight control task to support the position control*/
@@ -84,7 +85,7 @@ int main(void)
 
 	/*there are two queues to communicate with the tf card*/
 	/*the first one to read/write basic parameters like PID para, etc.*/
-	xDiskWrQueue1 = xQueueCreate(1,sizeof(OptionalPara));
+	xDiskParamQueue = xQueueCreate(1,sizeof(u16));
 	/*the second one to make a data log on the tf card*/
 	xDiskLogQueue = xQueueCreate(1,sizeof(char)*100);
 //	/* Start the tasks defined within this file/specific to this demo. */
@@ -98,7 +99,7 @@ int main(void)
 
 	xTaskCreate(vUartRecTask,(signed portCHAR *)"uart_rec", configMINIMAL_STACK_SIZE+128,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	xTaskCreate(vDiskOperation,(signed portCHAR *)"file", configMINIMAL_STACK_SIZE+4096,(void *)NULL,tskIDLE_PRIORITY+1,NULL);
-	xTaskCreate(vButtonEXTIHandler,(signed portCHAR *)"button", configMINIMAL_STACK_SIZE+32,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
+//	xTaskCreate(vButtonEXTIHandler,(signed portCHAR *)"button", configMINIMAL_STACK_SIZE+32,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	/* Start the scheduler. */
 	vTaskStartScheduler();
 
@@ -158,7 +159,6 @@ static void prvSetupHardware( void )
 {
 	NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
 
-//	TIM2_Config();
 	TIM3_Config();
 	TIM4_Config();
 	TIM5_Config();
