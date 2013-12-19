@@ -1,0 +1,7 @@
+This is a Quadrotor flight control program.
+Main features:
+	1.freeRTOS inside;
+	2.AHRS implemention on EKF;
+	3.most parameters can update online via uart;
+	4.use adis16405, SPI master mode, interrupt enable;
+	5.flight control task runs @200Hz
