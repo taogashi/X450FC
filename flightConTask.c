@@ -505,9 +505,12 @@ void WriteMotor(OutputType* opt)
 
 void vFlyConTask(void* pvParameters)
 {
+	//for print
 	char printf_buffer[100];
+	u16 string_len;
 	u8 CNT=0;
 	
+	//for queue receive
 	portBASE_TYPE xstatus;
 	u16 index;
 	
@@ -516,9 +519,13 @@ void vFlyConTask(void* pvParameters)
 	
 	//orders from remote controller
 	OrderType odt;
+	
+	//feed back from sensor system
 	FeedBackValType fbvt;
 	
+	//intermediate quantity in controllers
 	CtrlProcType cpt;
+	
 	//final thrust output to each motor
 	OutputType opt={100,100,100,100};
 
@@ -538,6 +545,7 @@ void vFlyConTask(void* pvParameters)
 	/****************** init controllers ************************/
 	ControllerInit();
 	
+	/******************* enable PWM width capture ***************/
 	TIM4_IT_Config();
 	TIM5_IT_Config();
 	
@@ -574,53 +582,89 @@ void vFlyConTask(void* pvParameters)
 
 		/************* controllers *************************/
 		/*roll loop*/
-//		if((fbvt.angle_valid & ROLL_ANGLE_VALID) != 0)
-//			PIDProccessing(&(system_ctrler.roll_ctrler), odt.rollOrder, fbvt.roll_angle, 0.005);
-//	
-//		if((fbvt.rate_valid & ROLL_RATE_VALID) != 0)
-//			PIDProccessing(&(system_ctrler.rollrate_ctrler), system_ctrler.roll_ctrler.output, fbvt.roll_rate, 0.005);
-		
-		PIDProccessing(&(system_ctrler.rollrate_ctrler), 0, fbvt.roll_rate, 0.005, &(gaus_filter[0]), &(gaus_filter[3]));
+		if((fbvt.angle_valid & ROLL_ANGLE_VALID) != 0)
+			PIDProccessing(&(system_ctrler.roll_ctrler)
+							, odt.rollOrder
+							, fbvt.roll_angle
+							, 0.005
+							, NULL
+							, NULL);
+	
+		if((fbvt.rate_valid & ROLL_RATE_VALID) != 0)
+			PIDProccessing(&(system_ctrler.rollrate_ctrler)
+							, system_ctrler.roll_ctrler.output
+							, fbvt.roll_rate
+							, 0.005
+							, &(gaus_filter[0])
+							, &(gaus_filter[3]));
 		
 		/*pitch loop*/
 		if((fbvt.angle_valid & PITCH_ANGLE_VALID) != 0)
-			PIDProccessing(&(system_ctrler.pitchrate_ctrler), odt.pitchOrder, fbvt.pitch_angle, 0.005, NULL, NULL);
+			PIDProccessing(&(system_ctrler.pitch_ctrler)
+							, odt.pitchOrder
+							, fbvt.pitch_angle
+							, 0.005
+							, NULL
+							, NULL);
 		if((fbvt.rate_valid & PITCH_RATE_VALID) != 0)
-			PIDProccessing(&(system_ctrler.pitchrate_ctrler), system_ctrler.pitch_ctrler.output, fbvt.pitch_rate, 0.005, &(gaus_filter[1]), NULL);
+			PIDProccessing(&(system_ctrler.pitchrate_ctrler)
+							, system_ctrler.pitch_ctrler.output
+							, fbvt.pitch_rate
+							, 0.005
+							, &(gaus_filter[1])
+							, &(gaus_filter[4]));
 		
 		/*yaw loop*/
 		if(odt.yawOrder<0.05 && odt.yawOrder>-0.05 && (fbvt.angle_valid & YAW_ANGLE_VALID) != 0)
 		{
 			if(yaw_angle_locked - fbvt.yaw_angle > PI)
 				fbvt.yaw_angle += 2*PI;
-			else if(yaw_angle_locked - fbvt.yaw_angle < PI)
+			else if(yaw_angle_locked - fbvt.yaw_angle < -PI)
 				fbvt.yaw_angle -= 2*PI;
-			PIDProccessing(&(system_ctrler.yaw_ctrler), yaw_angle_locked, fbvt.yaw_angle, 0.005, NULL, NULL);		
+			PIDProccessing(&(system_ctrler.yaw_ctrler)
+							, yaw_angle_locked
+							, fbvt.yaw_angle
+							, 0.005
+							, NULL
+							, NULL);		
 			
 			if((fbvt.rate_valid & YAW_RATE_VALID) != 0)
-				PIDProccessing(&(system_ctrler.yawrate_ctrler), system_ctrler.yaw_ctrler.output, fbvt.yaw_rate, 0.005, NULL, NULL);
+				PIDProccessing(&(system_ctrler.yawrate_ctrler)
+							, system_ctrler.yaw_ctrler.output
+							, fbvt.yaw_rate
+							, 0.005
+							, &(gaus_filter[2])
+							, &(gaus_filter[5]));
 		}	
 		else if((fbvt.rate_valid & YAW_RATE_VALID) != 0)
 		{
 			yaw_angle_locked = fbvt.yaw_angle;
-			PIDProccessing(&(system_ctrler.yawrate_ctrler), odt.yawOrder, fbvt.yaw_rate, 0.005, NULL, NULL);
+			PIDProccessing(&(system_ctrler.yawrate_ctrler)
+							, odt.yawOrder
+							, fbvt.yaw_rate
+							, 0.005
+							, &(gaus_filter[2])
+							, &(gaus_filter[5]));
 		}
 		
 		cpt.roll_moment = system_ctrler.rollrate_ctrler.output;
-		cpt.pitch_moment = 0.0;
-		cpt.yaw_moment = 0.0;
+		cpt.pitch_moment = system_ctrler.pitchrate_ctrler.output;
+		cpt.yaw_moment = system_ctrler.yawrate_ctrler.output;//0.0;
 		cpt.thrust_out = odt.thrustOrder;
 		
 		/************* decouple	 *************************/
 		OutputControl(&cpt, &opt);
 		WriteMotor(&opt);
 
-		if(CNT++>=20)
+		/************ print message **********************/
+		if(CNT++>=40)
 		{
 			CNT=0;
 //			sprintf(printf_buffer,"%.4f %.4f %.4f %.4f\r\n",system_ctrler.rollrate_ctrler.err, system_ctrler.rollrate_ctrler.integ, system_ctrler.rollrate_ctrler.deriv, system_ctrler.rollrate_ctrler.output);
-			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
-			UartSend(printf_buffer,strlen(printf_buffer));
+//			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
+//			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", cpt.roll_moment, cpt.pitch_moment, cpt.yaw_moment);
+			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}
