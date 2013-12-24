@@ -74,14 +74,14 @@ int main(void)
 	/*uart task send waypoint to flightConTask*/
 	xUartWayPointQueue = xQueueCreate(10,sizeof(WayPointType));
 	/*read sensor data and send to other tasks*/
-	xSenToAhrsQueue = xQueueCreate(1,sizeof(SensorDataType*));
+	xSenToAhrsQueue = xQueueCreate(1,sizeof(SensorDataType));
 
 	/*AHRS should send data to flight control task to stabilize the att*/
 	AHRSToFlightConQueue = xQueueCreate(1,sizeof(AHRSDataType));
 	/*AHRS should send data to INS task to offer inertial data*/
-	AHRSToINSQueue = xQueueCreate(1,sizeof(float *));
+	AHRSToINSQueue = xQueueCreate(1,sizeof(AHRS2INSType));
 	/*INS task should send data to flight control task to support the position control*/
-	INSToFlightConQueue = xQueueCreate(1,sizeof(PosConDataType));
+	INSToFlightConQueue = xQueueCreate(1,sizeof(PosDataType));
 
 	/*there are two queues to communicate with the tf card*/
 	/*the first one to read/write basic parameters like PID para, etc.*/
@@ -92,14 +92,14 @@ int main(void)
 	xTaskCreate(vLED1Task, ( signed portCHAR * ) "LED", configMINIMAL_STACK_SIZE, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
 	xTaskCreate(vSenAHRSRead, ( signed portCHAR * ) "AHRSread", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+3, NULL );
 
-	xTaskCreate(vAEKFAligTask, ( signed portCHAR * ) "AHRSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
+	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+1024, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
 //	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
 
 	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
 
 	xTaskCreate(vUartRecTask,(signed portCHAR *)"uart_rec", configMINIMAL_STACK_SIZE+128,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	xTaskCreate(vDiskOperation,(signed portCHAR *)"file", configMINIMAL_STACK_SIZE+4096,(void *)NULL,tskIDLE_PRIORITY+1,NULL);
-//	xTaskCreate(vButtonEXTIHandler,(signed portCHAR *)"button", configMINIMAL_STACK_SIZE+32,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
+	xTaskCreate(vButtonEXTIHandler,(signed portCHAR *)"button", configMINIMAL_STACK_SIZE+32,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	/* Start the scheduler. */
 	vTaskStartScheduler();
 
@@ -162,8 +162,8 @@ static void prvSetupHardware( void )
 	TIM3_Config();
 	TIM4_Config();
 	TIM5_Config();
-	USART2_DMA_Config();
-	USART2_DMA_IT_Config();
+	USART1_DMA_Config();
+	USART1_DMA_IT_Config();
 }
 /*-----------------------------------------------------------*/
 

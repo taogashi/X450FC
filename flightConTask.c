@@ -23,6 +23,7 @@ OptionalPara optional_param_global;
 /*********************************** private data************************************/
 struct system_level_ctrler{
 	//define controllers
+	PIDCtrlerType height_ctrler;
 	PIDCtrlerType roll_ctrler;
 	PIDCtrlerType pitch_ctrler;
 	PIDCtrlerType yaw_ctrler;
@@ -31,13 +32,15 @@ struct system_level_ctrler{
 	PIDCtrlerType yawrate_ctrler;
 }system_ctrler;	
 
-GFilterType gaus_filter[6]={
-{{0},10,9},
-{{0},10,9},
-{{0},10,9},
-{{0},10,9},
-{{0},10,9},
-{{0},10,9},
+GFilterType gaus_filter[8]={
+{{0},10,9},//roll rate
+{{0},10,9},//pitch rate
+{{0},10,9},//yaw rate
+{{0},10,9},//roll rate deriv
+{{0},10,9},//pitch rate deriv
+{{0},10,9},//yaw rate deriv
+{{0},10,9},//height
+{{0},10,9} //height deriv
 };
 
 /************************************ global function **********************************/
@@ -71,8 +74,8 @@ void LoadParam(void)
 	u16 index;
 	u8 i;
 	
-	sprintf(print_buffer, "load para...\r\n");
-	UartSend(print_buffer, strlen(print_buffer));
+	string_len = sprintf(print_buffer, "load para...\r\n");
+	UartSend(print_buffer, string_len);
 	param_read_status = xQueueReceive(xDiskParamQueue,&index,(portTickType)(5000/portTICK_RATE_MS));
 	if(param_read_status == pdPASS)
 	{
@@ -80,13 +83,13 @@ void LoadParam(void)
 		UartSend(print_buffer, string_len);
 		for(i=0; i<3; i++)
 		{	
-			sprintf(print_buffer,"%.2f %.2f %.2f | %.2f %.2f %.2f | %.2f %.2f %.2f | %.2f %.2f %.2f\r\n"
+			string_len = sprintf(print_buffer,"%.2f %.2f %.2f | %.2f %.2f %.2f | %.2f %.2f %.2f | %.2f %.2f %.2f\r\n"
 								,optional_param_global.loop_pid[0].xPID[i],optional_param_global.loop_pid[0].yPID[i],optional_param_global.loop_pid[0].zPID[i]
 								,optional_param_global.loop_pid[1].xPID[i],optional_param_global.loop_pid[1].yPID[i],optional_param_global.loop_pid[1].zPID[i]
 								,optional_param_global.loop_pid[2].xPID[i],optional_param_global.loop_pid[2].yPID[i],optional_param_global.loop_pid[2].zPID[i]
 								,optional_param_global.loop_pid[3].xPID[i],optional_param_global.loop_pid[3].yPID[i],optional_param_global.loop_pid[3].zPID[i]);
-			UartSend(print_buffer, strlen(print_buffer));
-			vTaskDelay((portTickType)(50/portTICK_RATE_MS));
+			UartSend(print_buffer, string_len);
+			vTaskDelay((portTickType)(300/portTICK_RATE_MS));
 		}
 		Blinks(LED1,1);
 	}

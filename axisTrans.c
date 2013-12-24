@@ -31,10 +31,17 @@ void Angle2Quat(float *quat,float *angle)
 	float cosPsi=arm_cos_f32(angle[2]/2);
 	float sinPsi=arm_sin_f32(angle[2]/2);
 
-	quat[0]=cosFai*cosTheta*cosPsi+sinFai*sinTheta*sinPsi;
-	quat[1]=sinFai*cosTheta*cosPsi-cosFai*sinTheta*sinPsi;
-	quat[2]=cosFai*sinTheta*cosPsi+sinFai*cosTheta*sinPsi;
-	quat[3]=cosFai*cosTheta*sinPsi-sinFai*sinTheta*cosPsi;
+//	quat[0]=cosFai*cosTheta*cosPsi+sinFai*sinTheta*sinPsi;
+//	quat[1]=sinFai*cosTheta*cosPsi-cosFai*sinTheta*sinPsi;
+//	quat[2]=cosFai*sinTheta*cosPsi+sinFai*cosTheta*sinPsi;
+//	quat[3]=cosFai*cosTheta*sinPsi-sinFai*sinTheta*cosPsi;
+	
+	/*according to matlab*/
+	quat[0]=cosFai*cosTheta*cosPsi - sinFai*sinTheta*sinPsi;
+	quat[1]=cosFai*sinTheta*sinPsi + sinFai*cosTheta*cosTheta;
+	quat[2]=cosFai*sinTheta*cosPsi - sinFai*cosTheta*sinPsi;
+	quat[3]=cosFai*cosTheta*sinPsi + sinFai*sinTheta*cosPsi;
+	
 	QuatNormalize(quat);	
 }
 
@@ -54,6 +61,11 @@ void Quat2dcm(float *DCM,float *quat)
 	DCM[0]=a2+b2-c2-d2;	DCM[1]=2*(bc-ad);	DCM[2]=2*(bd+ac);
 	DCM[3]=2*(bc+ad);	DCM[4]=a2-b2+c2-d2;	DCM[5]=2*(cd-ab);
 	DCM[6]=2*(bd-ac);	DCM[7]=2*(cd+ab);	DCM[8]=a2-b2-c2+d2;
+	
+	/*according to matlab*/
+//	DCM[0]=a2+b2-c2-d2;	DCM[1]=2*(bc+ad);	DCM[2]=2*(bd-ac);
+//	DCM[3]=2*(bc-ad);	DCM[4]=a2-b2+c2-d2;	DCM[5]=2*(cd+ab);
+//	DCM[6]=2*(bd+ac);	DCM[7]=2*(cd-ab);	DCM[8]=a2-b2-c2+d2;
 }
 
 void QuatNormalize(float *quat)//四元数归一化

@@ -19,6 +19,12 @@ typedef struct
 	float yawAngleRate;
 }AHRSDataType;
 
+typedef struct{
+	float q[4];
+	float acc[3];
+	float dt;
+}AHRS2INSType;
+
 extern xQueueHandle AHRSToFlightConQueue;
 extern xQueueHandle AHRSToINSQueue;
 
