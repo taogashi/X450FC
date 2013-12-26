@@ -145,6 +145,7 @@ void vUartRecTask(void* pvParameters)
 		{
 			memcpy(buffer,uart2Cache2,100);
 			uart2Flag=0;
+			/********************  checking PID *************************/
 			if((keyword=strstr(buffer,"PID")) != NULL)
 			{
 				sscanf(keyword, "PID,%hu", &index);
@@ -190,13 +191,32 @@ void vUartRecTask(void* pvParameters)
 					UartSend(buffer, string_len);
 				}
 			}
-			else if((keyword=strstr(buffer,"Neutral")) != NULL)
+			/********************  checking Miscel param *************************/
+			else if((keyword=strstr(buffer,"Miscel")) != NULL)
 			{
 				index = 4;
-				sscanf(keyword,NEUTRAL_FORMAT_IN
-						,&(optional_param_global.RCneutral[0]),&(optional_param_global.RCneutral[1]),&(optional_param_global.RCneutral[2]),&(optional_param_global.RCneutral[3]));
-				string_len = sprintf(buffer, NEUTRAL_FORMAT_OUT
-					,(optional_param_global.RCneutral[0]),(optional_param_global.RCneutral[1]),(optional_param_global.RCneutral[2]),(optional_param_global.RCneutral[3]));
+				sscanf(keyword,MISCEL_FORMAT_IN
+						,&(optional_param_global.miscel[0])
+						,&(optional_param_global.miscel[1])
+						,&(optional_param_global.miscel[2])
+						,&(optional_param_global.miscel[3])
+						,&(optional_param_global.miscel[4])
+						,&(optional_param_global.miscel[5])
+						,&(optional_param_global.miscel[6])
+						,&(optional_param_global.miscel[7])
+						,&(optional_param_global.miscel[8])
+						,&(optional_param_global.miscel[9]));
+				string_len = sprintf(buffer, MISCEL_FORMAT_OUT
+						,optional_param_global.miscel[0]
+						,optional_param_global.miscel[1]
+						,optional_param_global.miscel[2]
+						,optional_param_global.miscel[3]
+						,optional_param_global.miscel[4]
+						,optional_param_global.miscel[5]
+						,optional_param_global.miscel[6]
+						,optional_param_global.miscel[7]
+						,optional_param_global.miscel[8]
+						,optional_param_global.miscel[9]);
 				UartSend(buffer,string_len);
 				curTime = lastTime = xTaskGetTickCount();
 				while(uart2Flag==0 && curTime-lastTime<20000)
@@ -228,6 +248,53 @@ void vUartRecTask(void* pvParameters)
 					UartSend(buffer, string_len);
 				}
 			}
+			
+			/********************  checking Neutral param *************************/
+			else if((keyword=strstr(buffer,"Neutral")) != NULL)
+			{
+				index = 5;
+				sscanf(keyword,NEUTRAL_FORMAT_IN
+						,&(optional_param_global.RCneutral[0])
+						,&(optional_param_global.RCneutral[1])
+						,&(optional_param_global.RCneutral[2])
+						,&(optional_param_global.RCneutral[3]));
+				string_len = sprintf(buffer, NEUTRAL_FORMAT_OUT
+						,(optional_param_global.RCneutral[0])
+						,(optional_param_global.RCneutral[1])
+						,(optional_param_global.RCneutral[2])
+						,(optional_param_global.RCneutral[3]));
+				UartSend(buffer,string_len);
+				curTime = lastTime = xTaskGetTickCount();
+				while(uart2Flag==0 && curTime-lastTime<20000)
+				{
+					curTime= xTaskGetTickCount();
+					vTaskDelay((portTickType)(10/portTICK_RATE_MS));
+				}
+				if(uart2Flag == 1)
+				{
+					memcpy(buffer,uart2Cache2,10);
+					uart2Flag=0;
+					if((keyword=strstr(buffer,"OK")) != NULL)
+					{
+						string_len = sprintf(buffer, "OK!\r\n");
+						UartSend(buffer, string_len);
+						xQueueSend(xUartParaQueue, &index, portMAX_DELAY);
+						string_len = sprintf(buffer, "loaded!\r\n");
+						UartSend(buffer, string_len);
+					}
+					else
+					{
+						string_len = sprintf(buffer, "abort!\r\n");
+						UartSend(buffer, string_len);
+					}
+				}
+				else
+				{
+					string_len = sprintf(buffer, "abort!\r\n");
+					UartSend(buffer, string_len);
+				}
+			}
+			/********************  checking Waypoint *************************/
 			else if((keyword=strstr(buffer,"Waypoint")) != NULL)
 			{
 				sscanf(keyword,WAYPOINT_FORMAT_IN

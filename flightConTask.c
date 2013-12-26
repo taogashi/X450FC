@@ -13,6 +13,8 @@
 /* global data*/
 const char* PID_FORMAT_IN="PID,%hu,%f,%f,%f,%f,%f,%f,%f,%f,%f";
 const char* PID_FORMAT_OUT="set PID para: %d\r\n%.2f,%.2f,%.2f\r\n%.2f,%.2f,%.2f\r\n%.2f,%.2f,%.2f\r\n";
+const char* MISCEL_FORMAT_IN = "Miscel,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
+const char* MISCEL_FORMAT_OUT = "set Miscel,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n";
 const char* NEUTRAL_FORMAT_IN="Neutral,%hd,%hd,%hd,%hd";
 const char* NEUTRAL_FORMAT_OUT="set Neutral para: %d,%d,%d,%d\r\n";
 const char* WAYPOINT_FORMAT_IN="Waypoint,%hd,%hd,%hd,%hd,%d,%d,%d,%d";
@@ -24,6 +26,8 @@ OptionalPara optional_param_global;
 struct system_level_ctrler{
 	//define controllers
 	PIDCtrlerType height_ctrler;
+	PIDCtrlerType velo_z_ctrler;
+	
 	PIDCtrlerType roll_ctrler;
 	PIDCtrlerType pitch_ctrler;
 	PIDCtrlerType yaw_ctrler;
@@ -139,6 +143,18 @@ void InputControl(OrderType* odt)
 	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//折算成角度指令	 最大30°
 	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//折算成角度指令 最大30°
 	
+	//vertical
+	if(tim5IC2Width > 1500)
+		odt->hover_en = 0;
+	else
+		odt->hover_en = 1;
+	
+	//horizontal
+	if(tim5IC1Width > 1500)
+		odt->lock_en = 0;
+	else
+		odt->lock_en = 1;
+	
 	if(odt->thrustOrder < 0.00001)
 		odt->thrustOrder = 0.0;
 	else if(odt->thrustOrder > 1.0)
@@ -184,6 +200,18 @@ void ControllerInit(void)
 	system_ctrler.yaw_ctrler.kd = optional_param_global.loop_pid[1].zPID[2];
 	system_ctrler.yaw_ctrler.i_limit = 0.6;
 	system_ctrler.yaw_ctrler.d_limit = 1.0;
+	
+	system_ctrler.velo_z_ctrler.kp = optional_param_global.loop_pid[2].zPID[0];
+	system_ctrler.velo_z_ctrler.ki = optional_param_global.loop_pid[2].zPID[1];
+	system_ctrler.velo_z_ctrler.kd = optional_param_global.loop_pid[2].zPID[2];
+	system_ctrler.velo_z_ctrler.i_limit = 1.0;
+	system_ctrler.velo_z_ctrler.d_limit = 5.0;
+	
+	system_ctrler.height_ctrler.kp = optional_param_global.loop_pid[3].zPID[0];
+	system_ctrler.height_ctrler.ki = optional_param_global.loop_pid[3].zPID[1];
+	system_ctrler.height_ctrler.kd = optional_param_global.loop_pid[3].zPID[2];
+	system_ctrler.height_ctrler.i_limit = 1.0;
+	system_ctrler.height_ctrler.d_limit = 4.0;
 }
 
 
@@ -225,6 +253,18 @@ void ControllerUpdate(u16 index)
 			system_ctrler.yaw_ctrler.kp = optional_param_global.loop_pid[1].zPID[0];
 			system_ctrler.yaw_ctrler.ki = optional_param_global.loop_pid[1].zPID[1];
 			system_ctrler.yaw_ctrler.kd = optional_param_global.loop_pid[1].zPID[2];
+			break;
+		
+		case 2:
+			system_ctrler.velo_z_ctrler.kp = optional_param_global.loop_pid[2].zPID[0];
+			system_ctrler.velo_z_ctrler.ki = optional_param_global.loop_pid[2].zPID[1];
+			system_ctrler.velo_z_ctrler.kd = optional_param_global.loop_pid[2].zPID[2];
+			
+			break;
+		case 3:
+			system_ctrler.height_ctrler.kp = optional_param_global.loop_pid[3].zPID[0];
+			system_ctrler.height_ctrler.ki = optional_param_global.loop_pid[3].zPID[1];
+			system_ctrler.height_ctrler.kd = optional_param_global.loop_pid[3].zPID[2];
 			
 			break;
 		default:
@@ -517,8 +557,10 @@ void vFlyConTask(void* pvParameters)
 	portBASE_TYPE xstatus;
 	u16 index;
 	
+	float height_locked = 0.0;
 	float yaw_angle_locked = 0.0;
 	AHRSDataType adt;
+	PosDataType pdt;
 	
 	//orders from remote controller
 	OrderType odt;
@@ -541,6 +583,7 @@ void vFlyConTask(void* pvParameters)
 	optional_param_global.RCneutral[1] = 1500;
 	optional_param_global.RCneutral[2] = 1100;
 	optional_param_global.RCneutral[3] = 1500;
+	optional_param_global.miscel[0] = 0.48;
 	
 	/****************** parameters read form disk ***********************/
 	LoadParam();
@@ -565,8 +608,28 @@ void vFlyConTask(void* pvParameters)
 
 		/************* update attitude data *************************/
 		xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
+		/************* update pos data ******************************/
+		xstatus = xQueueReceive(INSToFlightConQueue, &pdt, 0);
 		
 		/************* feed back *************************/
+		if(xstatus == pdPASS)
+		{
+			fbvt.pos_x = pdt.posX;
+			fbvt.pos_y = pdt.posY;
+			fbvt.pos_z = pdt.posZ;
+			fbvt.pos_valid = POS_Z_VALID;
+			
+			fbvt.velo_x = pdt.veloX;
+			fbvt.velo_y = pdt.veloY;
+			fbvt.velo_z = pdt.veloZ;
+			fbvt.velo_valid = VELO_Z_VALID;
+		}
+		else
+		{
+			fbvt.pos_valid = 0;
+			fbvt.velo_valid = 0;
+		}	
+		
 		fbvt.roll_angle = adt.rollAngle;
 		fbvt.pitch_angle = adt.pitchAngle;
 		fbvt.yaw_angle = adt.yawAngle;
@@ -576,14 +639,37 @@ void vFlyConTask(void* pvParameters)
 		fbvt.pitch_rate = adt.pitchAngleRate;
 		fbvt.yaw_rate = adt.yawAngleRate;
 		fbvt.rate_valid = ROLL_RATE_VALID | PITCH_RATE_VALID | YAW_RATE_VALID;
-		
-		fbvt.pos_valid = 0;
-		fbvt.velo_valid = 0;
 
 		/************* input *************************/
 		InputControl(&odt);
 
 		/************* controllers *************************/
+		
+		/*vertical loop*/
+		if(odt.hover_en == 1)
+		{
+			if((fbvt.pos_valid & POS_Z_VALID) != 0)
+				PIDProccessing(&(system_ctrler.height_ctrler)
+								, height_locked
+								, fbvt.pos_z
+								, 0.005
+								, NULL
+								, NULL);
+			if((fbvt.velo_valid & VELO_Z_VALID) != 0)
+				PIDProccessing(&(system_ctrler.velo_z_ctrler)
+								, system_ctrler.height_ctrler.output
+								, -fbvt.velo_z
+								, 0.005
+								, NULL
+								, NULL);
+			cpt.thrust_out = optional_param_global.miscel[0] + system_ctrler.velo_z_ctrler.output; 
+		}
+		else
+		{
+			height_locked = fbvt.pos_z;
+			cpt.thrust_out = odt.thrustOrder;
+		}
+		
 		/*roll loop*/
 		if((fbvt.angle_valid & ROLL_ANGLE_VALID) != 0)
 			PIDProccessing(&(system_ctrler.roll_ctrler)
@@ -653,20 +739,23 @@ void vFlyConTask(void* pvParameters)
 		cpt.roll_moment = system_ctrler.rollrate_ctrler.output;
 		cpt.pitch_moment = system_ctrler.pitchrate_ctrler.output;
 		cpt.yaw_moment = system_ctrler.yawrate_ctrler.output;//0.0;
-		cpt.thrust_out = odt.thrustOrder;
 		
 		/************* decouple	 *************************/
 		OutputControl(&cpt, &opt);
 		WriteMotor(&opt);
 
 		/************ print message **********************/
-		if(CNT++>=40)
+		if(CNT++>=30)
 		{
 			CNT=0;
 //			sprintf(printf_buffer,"%.4f %.4f %.4f %.4f\r\n",system_ctrler.rollrate_ctrler.err, system_ctrler.rollrate_ctrler.integ, system_ctrler.rollrate_ctrler.deriv, system_ctrler.rollrate_ctrler.output);
 //			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", cpt.roll_moment, cpt.pitch_moment, cpt.yaw_moment);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f\r\n", fbvt.pos_z
+						, fbvt.velo_z
+						, system_ctrler.height_ctrler.output
+						, system_ctrler.velo_z_ctrler.output
+						, cpt.thrust_out);
 			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));

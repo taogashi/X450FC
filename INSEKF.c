@@ -29,11 +29,11 @@ float IMU_delay_buffer[GPS_DELAY_CNT*8];
 u8 buffer_header=0;
 
 const float iP[81]={
-		 100,0,0,0,0,0,0,0,0
-	    ,0,100,0,0,0,0,0,0,0
+		 10,0,0,0,0,0,0,0,0
+	    ,0,10,0,0,0,0,0,0,0
 	    ,0,0,2,0,0,0,0,0,0
-		,0,0,0, 9,0,0,0,0,0
-		,0,0,0,0, 9,0,0,0,0
+		,0,0,0, 5,0,0,0,0,0
+		,0,0,0,0, 5,0,0,0,0
 		,0,0,0,0,0, 1,0,0,0
 		,0,0,0,0,0,0,0.25,0,0
 		,0,0,0,0,0,0,0,0.25,0
@@ -53,8 +53,8 @@ const float iQ[81]={
 };	//used to initialize EKF filter structure
 
 const float iR[9]={
-		 10,0,0
-		,0,10,0
+		 2,0,0
+		,0,2,0
 		,0,0,0.1
 };	//used to initialize EKF filter structure
 
@@ -177,8 +177,8 @@ void vINSAligTask(void* pvParameters)
 		if(GetUltraSonicMeasure(&uw_height))
 		{
 			vision_validate_cnt ++;
-			string_len = sprintf(printf_buffer,"%.2f\r\n",uw_height);
-			UartSend(printf_buffer,string_len);
+//			string_len = sprintf(printf_buffer,"%.2f\r\n",uw_height);
+//			UartSend(printf_buffer,string_len);
 		}
 	}
 
@@ -254,8 +254,8 @@ void vINSAligTask(void* pvParameters)
 	xstatus=xTaskCreate(vIEKFProcessTask,(signed portCHAR *)"ins_ekf",configMINIMAL_STACK_SIZE+1024,(void *)NULL,tskIDLE_PRIORITY+1,NULL);
 	if(xstatus!=pdTRUE)
 	{
-		sprintf(printf_buffer, "failed to initialize\r\n");
-		UartSend(printf_buffer, strlen(printf_buffer));
+		string_len = sprintf(printf_buffer, "failed to initialize\r\n");
+		UartSend(printf_buffer, string_len);
 	}
 	vTaskDelete(NULL);
 }
@@ -266,9 +266,13 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
-	u8 i,j;
+//	char printf_buffer[100];
+//	u16 string_len;
+	
+	u8 i;
+//	u8 CNT=0;
 	u8 acc_bias_stable = 0;	//indicate whether acc bias is stably estimated
-	char logData[100]={0};
+//	char logData[100]={0};
 	
 	ekf_filter filter;	
 	float dt;
@@ -278,13 +282,9 @@ void vIEKFProcessTask(void* pvParameters)
 	AHRS2INSType cur_a2it;
 	AHRS2INSType k_a2it;
 
-	float insBufferK[INS_FRAME_LEN];
-	float insBufferCur[INS_FRAME_LEN];
-	float *p_insBuffer;
-
 	float uw_height;
 
-	VisionDataType vdt={0.0,0.0,0.0};
+//	VisionDataType vdt={0.0,0.0,0.0};
 //	portBASE_TYPE xstatus;
 	
 	PosDataType pdt;	//position message send to flight control task
@@ -360,7 +360,15 @@ void vIEKFProcessTask(void* pvParameters)
 						, NULL
 						, NULL
 						, (void *)(filter->x)
-						, NULL);		
+						, NULL);	
+//			if(CNT++ >= 3)
+//			{
+//				CNT = 0;
+////				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
+//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n",navParamCur[2]
+//							,navParamCur[5],navParamK[2],navParamK[5]);
+//				UartSend(printf_buffer, string_len);
+//			}
 //			printf("%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
 			/*
 			 *correct navParamCur
@@ -373,16 +381,16 @@ void vIEKFProcessTask(void* pvParameters)
 				navParamCur[7] = filter->x[7];
 				navParamCur[8] = filter->x[8];
 				
-				pdt.posX = navParamCur[0];
-				pdt.posY = navParamCur[1];
-				pdt.posZ = navParamCur[2];
+//				pdt.posX = navParamCur[0];
+//				pdt.posY = navParamCur[1];
+//				pdt.posZ = navParamCur[2];
+//				
+//				pdt.veloX = navParamCur[3];
+//				pdt.veloY = navParamCur[4];
+//				pdt.veloZ = navParamCur[5];
 				
-				pdt.veloX = navParamCur[3];
-				pdt.veloY = navParamCur[4];
-				pdt.veloZ = navParamCur[5];
-				
-				/*put to queue*/
-				xQueueSend(INSToFlightConQueue,&pdt,0);
+//				/*put to queue*/
+//				xQueueSend(INSToFlightConQueue,&pdt,0);
 			}
 			
 			/*correct navParameters at time K
@@ -394,7 +402,18 @@ void vIEKFProcessTask(void* pvParameters)
 			}
 			navParamK[6] = filter->x[6];
 			navParamK[7] = filter->x[7];
-			navParamK[8] = filter->x[8];			
+			navParamK[8] = filter->x[8];
+			
+			pdt.posX = navParamK[0];
+			pdt.posY = navParamK[1];
+			pdt.posZ = navParamK[2];
+			
+			pdt.veloX = navParamK[3];
+			pdt.veloY = navParamK[4];
+			pdt.veloZ = navParamK[5];
+			
+			/*put to queue*/
+			xQueueSend(INSToFlightConQueue,&pdt,0);			
 			
 			/*when acc bias stable, 
 			 *calculate current navigation parameters*/
@@ -417,9 +436,9 @@ void vIEKFProcessTask(void* pvParameters)
 					{
 						ReadBufferIndex(&cur_a2it, i+buffer_header);
 					}
-					insBufferCur[0] -= navParamK[6];
-					insBufferCur[1] -= navParamK[7];
-					insBufferCur[2] -= navParamK[8];
+					cur_a2it.acc[0] -= navParamK[6];
+					cur_a2it.acc[1] -= navParamK[7];
+					cur_a2it.acc[2] -= navParamK[8];
 					
 					INS_Update(navParamCur,&cur_a2it);
 				}
@@ -449,7 +468,7 @@ void INS_GetA(float *A,void *para1,void *para2,void *para3)
 	memset(A,0,324);
 
 	A[0]=1.0;	A[10]=1.0;	A[20]=1.0;	A[30]=1.0;	A[40]=1.0;	
-	A[50]=1.0;	A[60]=0.95;	A[70]=0.95;	A[80]=1.0;
+	A[50]=1.0;	A[60]=0.98;	A[70]=0.98;	A[80]=1.0;
 
 	A[3]=dt;A[13]=dt;A[23]=-dt;
 	

@@ -3,40 +3,26 @@
 
 #include "stm32f4xx.h"
 
+#define POS_X_VALID		0x01
+#define POS_Y_VALID		0x02
+#define POS_Z_VALID		0x04
+
+#define VELO_X_VALID		0x01
+#define VELO_Y_VALID		0x02
+#define VELO_Z_VALID		0x04
+
 #define ROLL_ANGLE_VALID 	0x01
 #define PITCH_ANGLE_VALID 	0x02
 #define YAW_ANGLE_VALID		0x04
+
 #define ROLL_RATE_VALID		0x01
 #define PITCH_RATE_VALID	0x02
 #define YAW_RATE_VALID		0x04
 
-/* index of each parameters in packet */
-#define ROLL_RATE_P		0
-#define ROLL_RATE_I		1
-#define ROLL_RATE_D		2
-
-#define PITCH_RATE_P	3
-#define PITCH_RATE_I	4
-#define PITCH_RATE_D	5
-
-#define YAW_RATE_P		6
-#define YAW_RATE_I		7
-#define YAW_RATE_D		8
-
-#define ROLL_P			9
-#define ROLL_I			10
-#define ROLL_D			11
-
-#define PITCH_P			12
-#define PITCH_I			13
-#define PITCH_D			14
-
-#define YAW_P			15
-#define YAW_I			16
-#define YAW_D			17
-
 extern const char* PID_FORMAT_IN;
 extern const char* PID_FORMAT_OUT;
+extern const char* MISCEL_FORMAT_IN;
+extern const char* MISCEL_FORMAT_OUT;
 extern const char* NEUTRAL_FORMAT_IN;
 extern const char* NEUTRAL_FORMAT_OUT;
 extern const char* WAYPOINT_FORMAT_IN;
@@ -85,6 +71,9 @@ typedef struct{
 	float rollOrder;
 	float pitchOrder;
 	float yawOrder;
+	
+	u8 hover_en;
+	u8 lock_en;
 }OrderType;
 
 typedef struct{
