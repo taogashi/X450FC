@@ -36,16 +36,19 @@ void USART1_IRQHandler(void)
 	if(USART_GetITStatus(USART1,USART_IT_RXNE)!=RESET)
 	{
 		byteRec=USART_ReceiveData(USART1);
-		if(byteRec != '\r' && byteRec!='\n')
+		if(byteRec != '\r' && byteRec!='\n' && byteRec!='\0')
 		{	
 			uart2Cache1[byteCNT++]=byteRec;
 			if(byteCNT>=100) byteCNT=0;
 		}
 		else
 		{	
-			uart2Cache1[byteCNT]='\0';
-			memcpy(uart2Cache2,uart2Cache1,byteCNT+1);
-			uart2Flag=1;
+			if(byteCNT > 5)
+			{
+				uart2Cache1[byteCNT]='\0';
+				memcpy(uart2Cache2,uart2Cache1,byteCNT+1);
+				uart2Flag=1;
+			}
 			byteCNT = 0;
 		}
 		USART_ClearITPendingBit(USART1,USART_IT_RXNE);
@@ -130,6 +133,7 @@ void vUartRecTask(void* pvParameters)
 	GMVTypeDef gmvData;
 
 	GPSDataType gpsData;
+	VisionDataType vdt;
 	
 	WayPointType wpt;
 
@@ -145,8 +149,17 @@ void vUartRecTask(void* pvParameters)
 		{
 			memcpy(buffer,uart2Cache2,100);
 			uart2Flag=0;
+			if((keyword=strstr(buffer, "POS")) != NULL)
+			{
+				sscanf(keyword,"POS,%hd,%hd,%hd,%hd"
+						,&(vdt.pos_x),&(vdt.pos_y),&(vdt.pos_z),&(vdt.chksm));
+				if(vdt.pos_x + vdt.pos_y + vdt.pos_z == vdt.chksm)
+				{
+					xQueueSend(xUartVisionQueue, &vdt, 0);
+				}
+			}
 			/********************  checking PID *************************/
-			if((keyword=strstr(buffer,"PID")) != NULL)
+			else if((keyword=strstr(buffer,"PID")) != NULL)
 			{
 				sscanf(keyword, "PID,%hu", &index);
 				sscanf(keyword,PID_FORMAT_IN

@@ -67,9 +67,10 @@ typedef struct
 
 typedef struct
 {
-	float pos_x;
-	float pos_y;
-	float pos_z;
+	s16 pos_x;
+	s16 pos_y;
+	s16 pos_z;
+	s16 chksm;
 }VisionDataType;
 
 extern xQueueHandle xUartGPSQueue;

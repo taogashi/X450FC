@@ -535,15 +535,15 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
  * ·µ»ØÖµ£ºÎÞ*/
 void WriteMotor(OutputType* opt)
 {
-	TIM_SetCompare1(TIM3,opt->motor1_Out);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,opt->motor2_Out);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,opt->motor3_Out);	//youmenOut	  
-	TIM_SetCompare4(TIM3,opt->motor4_Out);	//youmenOut	
+//	TIM_SetCompare1(TIM3,opt->motor1_Out);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,opt->motor2_Out);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,opt->motor3_Out);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,opt->motor4_Out);	//youmenOut	
 
-//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-//	TIM_SetCompare4(TIM3,100);	//youmenOut	
+	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 void vFlyConTask(void* pvParameters)
@@ -751,12 +751,12 @@ void vFlyConTask(void* pvParameters)
 //			sprintf(printf_buffer,"%.4f %.4f %.4f %.4f\r\n",system_ctrler.rollrate_ctrler.err, system_ctrler.rollrate_ctrler.integ, system_ctrler.rollrate_ctrler.deriv, system_ctrler.rollrate_ctrler.output);
 //			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f\r\n", fbvt.pos_z
-						, fbvt.velo_z
-						, system_ctrler.height_ctrler.output
-						, system_ctrler.velo_z_ctrler.output
-						, cpt.thrust_out);
-			UartSend(printf_buffer,string_len);
+//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f\r\n", fbvt.pos_z
+//						, fbvt.velo_z
+//						, system_ctrler.height_ctrler.output
+//						, system_ctrler.velo_z_ctrler.output
+//						, cpt.thrust_out);
+//			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}

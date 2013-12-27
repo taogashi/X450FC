@@ -24,6 +24,7 @@ float navParamK[9];	//k time navigation parameters, for GPS data fusion
 float x[9];	//navigation parameters error in time k
 
 double initPos[3];
+float Ctrans[9];
 
 float IMU_delay_buffer[GPS_DELAY_CNT*8];
 u8 buffer_header=0;
@@ -155,6 +156,7 @@ void vINSAligTask(void* pvParameters)
 	u16 vision_validate_cnt=0;
 	
 	float uw_height;
+	VisionDataType vdt;
 	
 	portBASE_TYPE xstatus;
 	
@@ -168,17 +170,22 @@ void vINSAligTask(void* pvParameters)
 
 #ifdef INS_DEBUG	
 	/*GPS data is not needed in debug mode*/
-	while(vision_validate_cnt < 10)	//
+	while(1)	//
 	{		
 		/*receive ins data and fill the IMU_delay_buffer*/
 		xQueueReceive(AHRSToINSQueue,&a2it,portMAX_DELAY);
 		PutToBuffer(&a2it);
 		
-		if(GetUltraSonicMeasure(&uw_height))
+		GetUltraSonicMeasure(&uw_height);
+		
+		if(pdPASS == xQueueReceive(xUartVisionQueue, &vdt, 0))
 		{
-			vision_validate_cnt ++;
-//			string_len = sprintf(printf_buffer,"%.2f\r\n",uw_height);
-//			UartSend(printf_buffer,string_len);
+			if(vision_validate_cnt++ >= 3)
+			{
+				vision_validate_cnt = 0;
+				string_len = sprintf(printf_buffer, "%d %d %d\n",vdt.pos_x,vdt.pos_y,vdt.pos_z);
+				UartSend(printf_buffer, string_len);
+			}
 		}
 	}
 
@@ -207,40 +214,35 @@ void vINSAligTask(void* pvParameters)
 	x[8]=0.0;
 #else
 	//normol mode
-	
-	/*wait while GPS signal not stable*/
-	while(vision_validate_cnt<=100)
-	{
-		xstatus = xQueueReceive(xUartVisionQueue,&vdt,0);
-		if(xstatus == pdPASS)
+	/*GPS data is not needed in debug mode*/
+	while(vision_validate_cnt < 10)	//
+	{		
+		/*receive ins data and fill the IMU_delay_buffer*/
+		xQueueReceive(AHRSToINSQueue,&a2it,portMAX_DELAY);
+		PutToBuffer(&a2it);
+		
+		GetUltraSonicMeasure(&uw_height);
+		if(xQueueReceive(xUartVisionQueue, &vdt, 0) == pdPASS)
 		{
 			vision_validate_cnt ++;
 		}
-		GetUltraSonicMeasure(&uw_height);
-		
-		/*receive ins data and fill the IMU_delay_buffer*/
-		xQueueReceive(AHRSToINSQueue,&p_insBuffer,portMAX_DELAY);
-		PutToBuffer(p_insBuffer);
-		/*clear time interval*/
-		p_insBuffer[INDEX_DT]=0.0;
 	}
+	Quat2dcm(Ctrans, a2it.q);
 
-	/************initialize navParamK*********************/
-	initPos[0] = 0.0;
-	initPos[1] = 0.0;
+	initPos[0] = (Ctrans[0]*vdt.pos_x + Ctrans[1]*vdt.pos_y + Ctrans[2]*vdt.pos_z)*0.001;
+	initPos[1] = (Ctrans[3]*vdt.pos_x + Ctrans[4]*vdt.pos_y + Ctrans[5]*vdt.pos_z)*0.001;
 	initPos[2] = uw_height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
 	navParamK[2] = 0.0;
-	navParamK[3] = gdt.speedN;
-	navParamK[4] = gdt.speedE;
+	navParamK[3] = 0.0;
+	navParamK[4] = 0.0;
 	navParamK[5] = 0.0;
 	navParamK[6] = 0.0;
 	navParamK[7] = 0.0;
 	navParamK[8] = 0.0;
 	
-	/*initialize filter state param x*/
 	x[0]=0.0;
 	x[1]=0.0;
 	x[2]=0.0;
@@ -266,11 +268,11 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
-//	char printf_buffer[100];
-//	u16 string_len;
+	char printf_buffer[100];
+	u16 string_len;
 	
 	u8 i;
-//	u8 CNT=0;
+	u8 CNT=0;
 	u8 acc_bias_stable = 0;	//indicate whether acc bias is stably estimated
 //	char logData[100]={0};
 	
@@ -284,7 +286,7 @@ void vIEKFProcessTask(void* pvParameters)
 
 	float uw_height;
 
-//	VisionDataType vdt={0.0,0.0,0.0};
+	VisionDataType vdt={0.0,0.0,0.0};
 //	portBASE_TYPE xstatus;
 	
 	PosDataType pdt;	//position message send to flight control task
@@ -326,12 +328,12 @@ void vIEKFProcessTask(void* pvParameters)
 					, NULL);
 			
 //		xstatus=xQueueReceive(xUartVisionQueue,&vdt,0);	//get measurement data
-		if(GetUltraSonicMeasure(&uw_height))
+		GetUltraSonicMeasure(&uw_height);
+		if(xQueueReceive(xUartVisionQueue,&vdt,0) == pdPASS)
 		{
 			float meas_Err[3]={0.0};
-					
-			measure[0] = 0.0;
-			measure[1] = 0.0;
+			measure[0] = (Ctrans[0]*vdt.pos_x + Ctrans[1]*vdt.pos_y + Ctrans[2]*vdt.pos_z)*0.001-initPos[0];
+			measure[1] = (Ctrans[3]*vdt.pos_x + Ctrans[4]*vdt.pos_y + Ctrans[5]*vdt.pos_z)*0.001-initPos[1];
 			measure[2] = uw_height-initPos[2];
 			
 			for(i=0;i<3;i++)
@@ -361,15 +363,15 @@ void vIEKFProcessTask(void* pvParameters)
 						, NULL
 						, (void *)(filter->x)
 						, NULL);	
-//			if(CNT++ >= 3)
-//			{
-//				CNT = 0;
-////				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
-//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n",navParamCur[2]
-//							,navParamCur[5],navParamK[2],navParamK[5]);
-//				UartSend(printf_buffer, string_len);
-//			}
-//			printf("%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
+			if(CNT++ >= 4)
+			{
+				CNT = 0;
+//				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
+				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+							,navParamK[0],navParamK[1],navParamK[2]
+							,measure[0],measure[1],measure[2]);
+				UartSend(printf_buffer, string_len);
+			}
 			/*
 			 *correct navParamCur
 			 */
@@ -380,17 +382,6 @@ void vIEKFProcessTask(void* pvParameters)
 				navParamCur[6] = filter->x[6];
 				navParamCur[7] = filter->x[7];
 				navParamCur[8] = filter->x[8];
-				
-//				pdt.posX = navParamCur[0];
-//				pdt.posY = navParamCur[1];
-//				pdt.posZ = navParamCur[2];
-//				
-//				pdt.veloX = navParamCur[3];
-//				pdt.veloY = navParamCur[4];
-//				pdt.veloZ = navParamCur[5];
-				
-//				/*put to queue*/
-//				xQueueSend(INSToFlightConQueue,&pdt,0);
 			}
 			
 			/*correct navParameters at time K
@@ -400,6 +391,7 @@ void vIEKFProcessTask(void* pvParameters)
 				navParamK[i] -= filter->x[i];
 				filter->x[i] = 0.0;
 			}
+			
 			navParamK[6] = filter->x[6];
 			navParamK[7] = filter->x[7];
 			navParamK[8] = filter->x[8];
@@ -468,7 +460,7 @@ void INS_GetA(float *A,void *para1,void *para2,void *para3)
 	memset(A,0,324);
 
 	A[0]=1.0;	A[10]=1.0;	A[20]=1.0;	A[30]=1.0;	A[40]=1.0;	
-	A[50]=1.0;	A[60]=0.98;	A[70]=0.98;	A[80]=1.0;
+	A[50]=1.0;	A[60]=1.0;	A[70]=1.0;	A[80]=1.0;
 
 	A[3]=dt;A[13]=dt;A[23]=-dt;
 	
