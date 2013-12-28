@@ -43,7 +43,7 @@
             <NotGenerated>0</NotGenerated>
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
-          <OutputDirectory>.\</OutputDirectory>
+          <OutputDirectory>..\Object\</OutputDirectory>
           <OutputName>skyworksF4</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
@@ -351,7 +351,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F4XX,ARM_MATH_CM4</Define>
               <Undefine></Undefine>
-              <IncludePath>..\;..\Libraries\CMSIS\Include;..\Libraries\CMSIS\ST\STM32F4xx\Include;..\Libraries\STM32F4xx_StdPeriph_Driver\inc;..\User;..\Source\include;..\Source;..\Source\portable;..\Source\portable\MemMang;..\Libraries\FatFs</IncludePath>
+              <IncludePath>..\;..\Libraries\CMSIS\Include;..\Libraries\CMSIS\ST\STM32F4xx\Include;..\Libraries\STM32F4xx_StdPeriph_Driver\inc;..\Source\include;..\Source;..\Source\portable;..\Source\portable\MemMang;..\Libraries\FatFs;..\User</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -608,14 +608,14 @@
               <FilePath>..\User\pwm.c</FilePath>
             </File>
             <File>
-              <FileName>ADIS16405.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\ADIS16405.c</FilePath>
-            </File>
-            <File>
               <FileName>ultraSonic.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\ultraSonic.c</FilePath>
+            </File>
+            <File>
+              <FileName>AHRS.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\AHRS.c</FilePath>
             </File>
           </Files>
         </Group>

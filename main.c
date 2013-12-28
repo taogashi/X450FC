@@ -93,9 +93,9 @@ int main(void)
 	xTaskCreate(vSenAHRSRead, ( signed portCHAR * ) "AHRSread", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+3, NULL );
 
 	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+1024, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
-	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
+//	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
 
-	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
+//	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
 
 	xTaskCreate(vUartRecTask,(signed portCHAR *)"uart_rec", configMINIMAL_STACK_SIZE+128,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	xTaskCreate(vDiskOperation,(signed portCHAR *)"file", configMINIMAL_STACK_SIZE+4096,(void *)NULL,tskIDLE_PRIORITY+1,NULL);

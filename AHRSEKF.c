@@ -50,7 +50,8 @@ void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
 {
-//	char uart_buffer[100];
+	char print_buffer[100];
+	u16 string_len;
 	/*index*/
 	u8 i=0;	
 	u8 k;
@@ -160,8 +161,8 @@ void vAEKFProcessTask(void* pvParameters)
 		{			
 			float norm;
 			i=0;
-//			sprintf(uart_buffer,"%hd %hd %hd\r\n",sdt.mag[0],sdt.mag[1],sdt.mag[2]);
-//			UartSend(uart_buffer, strlen(uart_buffer));
+			string_len = sprintf(print_buffer,"%hd %hd %hd\r\n",sdt.mag[0],sdt.mag[1],sdt.mag[2]);
+			UartSend(print_buffer, string_len);
 
 			/*get measurement*/
 			measure[0]=sdt.acc[0];

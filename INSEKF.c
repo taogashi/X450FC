@@ -20,8 +20,8 @@
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
 
 float navParamCur[9];	//current navigation parameters, for flight control
-float navParamK[9];	//k time navigation parameters, for GPS data fusion
-float x[9];	//navigation parameters error in time k
+float navParamK[9]={0,0,0,0,0,0,0.1,-0.3,0};	//k time navigation parameters, for GPS data fusion
+float x[9]={0,0,0,0,0,0,0.1,-0.3,0};	//navigation parameters error in time k
 
 double initPos[3];
 float Ctrans[9];
@@ -42,15 +42,15 @@ const float iP[81]={
 };	//used to initialize EKF filter structure
 
 const float iQ[81]={
-		 0.0000000001,0,0,0,0,0,0,0,0
-	    ,0,0.0000000001,0,0,0,0,0,0,0
-	    ,0,0,0.0000000001,0,0,0,0,0,0
-		,0,0,0,0.0025,0,0,0,0,0
-		,0,0,0,0,0.0025,0,0,0,0
-		,0,0,0,0,0,0.0025,0,0,0
-		,0,0,0,0,0,0,0.000000004096,0,0
-		,0,0,0,0,0,0,0,0.000000004096,0
-		,0,0,0,0,0,0,0,0,0.000000004096
+		 0.01,0,0,0,0,0,0,0,0
+	    ,0,0.01,0,0,0,0,0,0,0
+	    ,0,0,0.01,0,0,0,0,0,0
+		,0,0,0,0.25,0,0,0,0,0
+		,0,0,0,0,0.25,0,0,0,0
+		,0,0,0,0,0,0.25,0,0,0
+		,0,0,0,0,0,0,0.000004096,0,0
+		,0,0,0,0,0,0,0,0.000004096,0
+		,0,0,0,0,0,0,0,0,0.000004096
 };	//used to initialize EKF filter structure
 
 const float iR[9]={
@@ -89,25 +89,25 @@ __inline void ReadBufferFront(AHRS2INSType *a2it)
 {
 	if(buffer_header == 0)
 	{
-		a2it->acc[0] 	= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN];
-		a2it->acc[1] 	= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+1];
-		a2it->acc[2] 	= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+2];
-		a2it->q[0] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+3];
-		a2it->q[1] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+4];
-		a2it->q[2] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+5];
-		a2it->q[3] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+6];
-		a2it->dt 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+7];
+		a2it->acc[0] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN];
+		a2it->acc[1] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+1];
+		a2it->acc[2] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+2];
+		a2it->q[0] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+3];
+		a2it->q[1] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+4];
+		a2it->q[2] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+5];
+		a2it->q[3] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+6];
+		a2it->dt = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+7];
 	}
 	else
 	{
-		a2it->acc[0] 	= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN];
-		a2it->acc[1] 	= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+1];
-		a2it->acc[2] 	= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+2];
-		a2it->q[0] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+3];
-		a2it->q[1] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+4];
-		a2it->q[2] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+5];
-		a2it->q[3] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+6];
-		a2it->dt 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+7];
+		a2it->acc[0] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN];
+		a2it->acc[1] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+1];
+		a2it->acc[2] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+2];
+		a2it->q[0] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+3];
+		a2it->q[1] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+4];
+		a2it->q[2] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+5];
+		a2it->q[3] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+6];
+		a2it->dt = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+7];
 	}
 }
 
@@ -116,14 +116,14 @@ __inline void ReadBufferFront(AHRS2INSType *a2it)
  */
 __inline void ReadBufferBack(AHRS2INSType *a2it)
 {
-	a2it->acc[0]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN];
-	a2it->acc[1]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+1];
-	a2it->acc[2]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+2];
-	a2it->q[0]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+3];
-	a2it->q[1] 		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+4];
-	a2it->q[2] 		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+5];
-	a2it->q[3] 		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+6];
-	a2it->dt  		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+7];
+	a2it->acc[0]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN];
+	a2it->acc[1]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+1];
+	a2it->acc[2]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+2];
+	a2it->q[0]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+3];
+	a2it->q[1] = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+4];
+	a2it->q[2] = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+5];
+	a2it->q[3] = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+6];
+	a2it->dt  = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+7];
 }
 
 /*
@@ -367,9 +367,14 @@ void vIEKFProcessTask(void* pvParameters)
 			{
 				CNT = 0;
 //				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
-				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-							,navParamK[0],navParamK[1],navParamK[2]
-							,measure[0],measure[1],measure[2]);
+//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//							,navParamK[0],navParamK[1],navParamK[2]
+//							,navParamK[3],navParamK[4],navParamK[5]
+//							,navParamK[6],navParamK[7],navParamK[8]);
+				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+						,vdt.pos_x*0.001,vdt.pos_y*0.001,uw_height
+						,navParamK[0],navParamK[1],navParamK[2]
+						,navParamK[3],navParamK[4],navParamK[5]);
 				UartSend(printf_buffer, string_len);
 			}
 			/*

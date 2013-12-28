@@ -3,12 +3,18 @@
 
 #define Dummy_Byte 0xff
 
-u8 byteBuffer[50];
+u8 spi_byte_buffer[50]={0};
+u8 spi_req_header[] = {0x51};
+volatile u8 frame_captured = 1;
 
 void AHRS_SPI_Config(void)
 {
 	SPI_InitTypeDef  SPI_InitStructure;
 	GPIO_InitTypeDef  GPIO_InitStructure;
+	
+#ifdef AHRS_SPI_INT_MODE
+	NVIC_InitTypeDef NVIC_InitStructure;
+#endif
 
 	RCC_APB1PeriphClockCmd(AHRS_SPI_RCC_Periph,ENABLE);
 	RCC_AHB1PeriphClockCmd(AHRS_SPI_RCC_Port,ENABLE);
@@ -27,10 +33,10 @@ void AHRS_SPI_Config(void)
 	GPIO_Init(AHRS_SPI_NSS_Pin_Port,&GPIO_InitStructure);
 
 	GPIO_InitStructure.GPIO_Pin = AHRS_SPI_NSS_Pin;
-    	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT ;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT ;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    	GPIO_Init(AHRS_SPI_NSS_Pin_Port,&GPIO_InitStructure);
+	GPIO_Init(AHRS_SPI_NSS_Pin_Port,&GPIO_InitStructure);
 
 	SPI_Cmd(AHRS_SPI, DISABLE);
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
@@ -46,6 +52,16 @@ void AHRS_SPI_Config(void)
 
 	SPI_Cmd(AHRS_SPI, ENABLE);
 	AHRS_SPI_CS_HIGH(); 
+
+#ifdef AHRS_SPI_INT_MODE
+	NVIC_InitStructure.NVIC_IRQChannel = AHRS_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = AHRS_INT_PRIOR;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+	
+	AHRS_SPI_CS_LOW();
+	SPI_I2S_ITConfig(AHRS_SPI, SPI_I2S_IT_RXNE, ENABLE);
+#endif
 }
 
 u8 AHRS_SPI_SendByte(u8 byte)
@@ -71,16 +87,80 @@ void Delay_us(__IO uint32_t nCount)
 	}
 }
 
-u8 ReadAHRS(SensorDataType* sd)
+u8 ReadAHRSRaw(SensorDataType* sd)
 {
+	static u8 j=0;
 	u8 i;
 	ComType cmt;
-	u8 byteToRead=sizeof(ComType);
+	u8 bbstatus=0;
+	s32 CheckSum=0;
+	u8 ret=0;
+	static u32 hit=0;
+	static u32 miss=0;
+
+#ifndef AHRS_SPI_INT_MODE
+	u8 byteToRead = 26;//sizeof(ComType);
+	
+	AHRS_SPI_CS_LOW();
+	Delay_us(5);
+
+	for(i=0;i<byteToRead;i++)
+	{
+		spi_byte_buffer[i]=AHRS_SPI_SendByte(j++);
+		if(spi_byte_buffer[i] == 0xbb)
+		{
+			bbstatus ++;
+			if(bbstatus >= 2)
+			{
+				bbstatus = 0;
+				break;
+			}
+		}
+		else
+		{
+			bbstatus = 0;
+		}
+		Delay_us(4);
+	}
+	AHRS_SPI_CS_HIGH();	
+#else
+	if(frame_captured == 0)
+		return 0;
+#endif
+   	
+	cmt=*(ComType *)spi_byte_buffer;
+	for(i=0;i<9;i++) CheckSum+=cmt.data[i];
+	if(CheckSum == cmt.Check && CheckSum != 0)
+	{
+		for(i=0;i<3;i++) sd->gyr[i]=cmt.data[i]*0.00025;
+		for(i=0;i<3;i++) sd->acc[i]=cmt.data[i+3]*0.001;
+		for(i=0;i<3;i++) sd->mag[i]=cmt.data[i+6];
+		hit++;
+		ret = 1;
+	}
+	else
+		miss ++;
+	
+#ifdef AHRS_SPI_INT_MODE
+	frame_captured = 0;
+	AHRS_SPI_CS_LOW();
+	SPI_I2S_SendData(AHRS_SPI, 0x51);
+	SPI_I2S_ITConfig(AHRS_SPI, SPI_I2S_IT_RXNE, ENABLE);
+#endif
+	return ret;
+}
+
+u8 ReadAHRSAtt(AttDataType* att_data)
+{
+	u8 i;
+	AttComType act;
+	u8 byteBuffer[50];
+	u8 byteToRead=sizeof(AttComType);
 	s32 CheckSum=0;
 
 	AHRS_SPI_CS_LOW();
 	Delay_us(80);
-	AHRS_SPI_SendByte(0x51);
+	AHRS_SPI_SendByte(0xa9);
 	Delay_us(200);
 	for(i=0;i<byteToRead;i++)
 	{
@@ -89,36 +169,24 @@ u8 ReadAHRS(SensorDataType* sd)
 	}
 	AHRS_SPI_CS_HIGH();	
    	
-	cmt=*(ComType *)byteBuffer;
-	for(i=0;i<9;i++) CheckSum+=cmt.data[i];
-	if(CheckSum == cmt.Check && CheckSum!=0)
+	act = *(AttComType *)byteBuffer;
+	for(i=0;i<7;i++) CheckSum+=act.data[i];
+	if(CheckSum == act.Check && CheckSum!=0)
 	{
-	 	for(i=0;i<3;i++) sd->gyr[i]=cmt.data[i]*0.00025;
-		for(i=0;i<3;i++) sd->acc[i]=cmt.data[i+3]*0.001;
-		for(i=0;i<3;i++) sd->mag[i]=cmt.data[i+6];
-
-		sd->acc[2]+=0.67;
-		sd->mag[0]+=88;
-		sd->mag[0]*=1.0360;
-		sd->mag[1]+=19;
-		sd->mag[1]*=0.9941;
-		sd->mag[2]+=43;
-		sd->mag[2]*=1.0595;
-
-//		for(i=0;i<3;i++)
-//			sd->acc[i]=GaussianFilter(&(sensorGFT[i]),sd->acc[i]);
-//		for(i=0;i<3;i++)
-//			sd->mag[i]=GaussianFilter(&(sensorGFT[i+3]),sd->mag[i]);
+	 	for(i=0;i<4;i++) att_data->quaternion[i]=act.data[i]*0.00025;
+		for(i=0;i<3;i++) att_data->gyr[i]=act.data[i+3]*0.00025;
 		return 1;
 	}
-
-	return 0;
+	
+	return 0;	
 }
+
 
 u8 ReadBaroHeight(float *height)
 {
 	u8 i;
 	BaroHeightType bht;
+	u8 byteBuffer[50];
 	u8 byteToRead=sizeof(BaroHeightType);
 	u8 CheckSum=0;
 	
@@ -142,6 +210,57 @@ u8 ReadBaroHeight(float *height)
 	}
 
 	return 0;
+}
+
+void AHRS_IRQHandler(void)
+{
+	static u8 spi_com_stage = 0;
+	static u8 bbstatus = 0;
+	
+	if(SPI_I2S_GetITStatus(AHRS_SPI, SPI_I2S_IT_RXNE) == SET)
+	{
+		spi_byte_buffer[spi_com_stage] = SPI_I2S_ReceiveData(AHRS_SPI);
+		if(spi_byte_buffer[spi_com_stage] == 0xbb)
+		{
+			bbstatus ++;
+			if(bbstatus >= 2)
+			{
+				bbstatus = 0;
+				SPI_I2S_ITConfig(AHRS_SPI, SPI_I2S_IT_RXNE, DISABLE);
+				AHRS_SPI_CS_HIGH();
+				spi_com_stage = 0;
+				frame_captured = 1;
+				return;
+			}
+		}
+		else
+		{
+			bbstatus = 0;
+		}
+		SPI_I2S_SendData(AHRS_SPI, Dummy_Byte);
+		spi_com_stage++;
+//		if(spi_com_stage == 0)
+//		{
+//			SPI_I2S_ReceiveData(AHRS_SPI);
+//			Delay_us(40);
+//		}
+//		else if(spi_com_stage<AHRS_FRAME_LEN)
+//		{
+//			spi_byte_buffer[spi_com_stage-1] = SPI_I2S_ReceiveData(AHRS_SPI);
+//		}
+//		else
+//		{
+//			spi_byte_buffer[spi_com_stage-1] = SPI_I2S_ReceiveData(AHRS_SPI);
+//			SPI_I2S_ITConfig(AHRS_SPI, SPI_I2S_IT_RXNE, DISABLE);
+//			AHRS_SPI_CS_HIGH();
+//			spi_com_stage = 0;
+//			frame_captured = 1;
+//			return;
+//		}
+
+//		SPI_I2S_SendData(AHRS_SPI, Dummy_Byte);
+//		spi_com_stage++;
+	}
 }
 
 //u8 ReadBaroHeight(float *height)

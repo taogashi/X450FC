@@ -8,12 +8,14 @@
   
 /* Includes */
 #include "stm32f4xx.h"
-
+#include "OSConfig.h"
 /**
 * @addtogroup AHRS 
 * @{
 */
 
+#define AHRS_SPI_INT_MODE
+	 
 #define AHRS_SPI                	SPI2
 #define AHRS_SPI_RCC_Periph     	RCC_APB1Periph_SPI2
 #define AHRS_SPI_RCC_Port			RCC_AHB1Periph_GPIOB
@@ -38,8 +40,11 @@
 #define AHRS_SPI_MOSI_Pin_Source   	GPIO_PinSource15
 #define AHRS_SPI_MOSI_AF			GPIO_AF_SPI2
 
-#define AHRS_SPI_BaudRatePrescaler	SPI_BaudRatePrescaler_64
+#define AHRS_SPI_BaudRatePrescaler	SPI_BaudRatePrescaler_32
 
+#define AHRS_INT_PRIOR 		configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY-2 //configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY=5
+#define AHRS_IRQChannel 	SPI2_IRQn
+#define AHRS_IRQHandler		SPI2_IRQHandler
 
 #endif /* __HAL_AHRS_H */
 
