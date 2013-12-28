@@ -89,25 +89,25 @@ __inline void ReadBufferFront(AHRS2INSType *a2it)
 {
 	if(buffer_header == 0)
 	{
-		a2it->acc[0] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN];
-		a2it->acc[1] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+1];
-		a2it->acc[2] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+2];
-		a2it->q[0] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+3];
-		a2it->q[1] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+4];
-		a2it->q[2] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+5];
-		a2it->q[3] = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+6];
-		a2it->dt = IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+7];
+		a2it->acc[0] 	= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN];
+		a2it->acc[1] 	= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+1];
+		a2it->acc[2] 	= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+2];
+		a2it->q[0] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+3];
+		a2it->q[1] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+4];
+		a2it->q[2] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+5];
+		a2it->q[3] 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+6];
+		a2it->dt 		= IMU_delay_buffer[(GPS_DELAY_CNT-1)*INS_FRAME_LEN+7];
 	}
 	else
 	{
-		a2it->acc[0] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN];
-		a2it->acc[1] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+1];
-		a2it->acc[2] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+2];
-		a2it->q[0] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+3];
-		a2it->q[1] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+4];
-		a2it->q[2] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+5];
-		a2it->q[3] = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+6];
-		a2it->dt = IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+7];
+		a2it->acc[0] 	= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN];
+		a2it->acc[1] 	= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+1];
+		a2it->acc[2] 	= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+2];
+		a2it->q[0] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+3];
+		a2it->q[1] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+4];
+		a2it->q[2] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+5];
+		a2it->q[3] 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+6];
+		a2it->dt 		= IMU_delay_buffer[(buffer_header-1)*INS_FRAME_LEN+7];
 	}
 }
 
@@ -116,14 +116,14 @@ __inline void ReadBufferFront(AHRS2INSType *a2it)
  */
 __inline void ReadBufferBack(AHRS2INSType *a2it)
 {
-	a2it->acc[0]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN];
-	a2it->acc[1]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+1];
-	a2it->acc[2]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+2];
-	a2it->q[0]   = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+3];
-	a2it->q[1] = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+4];
-	a2it->q[2] = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+5];
-	a2it->q[3] = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+6];
-	a2it->dt  = IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+7];
+	a2it->acc[0]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN];
+	a2it->acc[1]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+1];
+	a2it->acc[2]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+2];
+	a2it->q[0]   	= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+3];
+	a2it->q[1] 		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+4];
+	a2it->q[2] 		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+5];
+	a2it->q[3] 		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+6];
+	a2it->dt  		= IMU_delay_buffer[(buffer_header)*INS_FRAME_LEN+7];
 }
 
 /*
