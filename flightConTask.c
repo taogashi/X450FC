@@ -756,6 +756,7 @@ void vFlyConTask(void* pvParameters)
 //						, system_ctrler.height_ctrler.output
 //						, system_ctrler.velo_z_ctrler.output
 //						, cpt.thrust_out);
+//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));

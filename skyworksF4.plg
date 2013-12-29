@@ -3,8 +3,8 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-D:\Program Data\Dropbox\Dropbox\stm32\QUAD\F4-X450-16405-INS9-5-v0.3\User\IO_Toggle.uvproj
-Project File Date:  12/19/2013
+D:\Program Data\Dropbox\Dropbox\stm32\QUAD\F4-X450\User\IO_Toggle.uvproj
+Project File Date:  12/29/2013
 
 <h2>Output:</h2>
 Build target 'IO_Toggle'
@@ -66,7 +66,7 @@ compiling arm_sin_f32.c...
 linking...
 Program Size: Code=57948 RO-data=4808 RW-data=724 ZI-data=54564  
 FromELF: creating hex file...
-".\skyworksF4.axf" - 0 Errors, 5 Warning(s).
+"..\Object\skyworksF4.axf" - 0 Errors, 5 Warning(s).
 Build target 'IO_Toggle'
 compiling main.c...
 compiling stm32f4xx_it.c...
@@ -124,6 +124,228 @@ compiling arm_mat_trans_f32.c...
 compiling arm_cos_f32.c...
 compiling arm_sin_f32.c...
 linking...
-Program Size: Code=57948 RO-data=4808 RW-data=724 ZI-data=54564  
+Program Size: Code=54652 RO-data=4128 RW-data=724 ZI-data=54132  
 FromELF: creating hex file...
 "..\Object\skyworksF4.axf" - 0 Errors, 5 Warning(s).
+Build target 'IO_Toggle'
+compiling main.c...
+compiling flightConTask.c...
+linking...
+Program Size: Code=54784 RO-data=4124 RW-data=724 ZI-data=54132  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+linking...
+Program Size: Code=54784 RO-data=4124 RW-data=724 ZI-data=54132  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Load "..\\Object\\skyworksF4.axf" 
+Set JLink Project File to "D:\Program Data\Dropbox\Dropbox\stm32\QUAD\F4-X450\User\JLinkSettings.ini"
+* JLink Info: Device "STM32F407VG" selected (1024 KB flash, 128 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.68a, compiled Apr 12 2013 13:26:50
+Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
+Hardware: V7.00
+S/N : 20090928 
+Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFull 
+ 
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: TPIU fitted.
+* JLink Info: ETM fitted.
+* JLink Info: FPUnit: 6 code (BP) slots and 2 literal slots
+* JLink Info: Found Cortex-M4 r0p1, Little endian.
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: STM32F407VG
+VTarget = 3.300V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 1, TMS: 0, TRES: 1, TRST: 1
+Hardware-Breakpoints: 6
+Software-Breakpoints: 8192
+Watchpoints:          4
+JTAG speed: 500 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+Build target 'IO_Toggle'
+compiling flightConTask.c...
+..\User\flightConTask.c(552): warning:  #177-D: variable "printf_buffer" was declared but never referenced
+..\User\flightConTask.c(553): warning:  #177-D: variable "string_len" was declared but never referenced
+linking...
+Program Size: Code=54652 RO-data=4128 RW-data=724 ZI-data=54132  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 2 Warning(s).
+Build target 'IO_Toggle'
+compiling main.c...
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=724 ZI-data=54564  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=724 ZI-data=54564  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=724 ZI-data=54564  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Load "..\\Object\\skyworksF4.axf" 
+Set JLink Project File to "D:\Program Data\Dropbox\Dropbox\stm32\QUAD\F4-X450\User\JLinkSettings.ini"
+* JLink Info: Device "STM32F407VG" selected (1024 KB flash, 128 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.68a, compiled Apr 12 2013 13:26:50
+Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
+Hardware: V7.00
+S/N : 20090928 
+Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFull 
+ 
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: TPIU fitted.
+* JLink Info: ETM fitted.
+* JLink Info: FPUnit: 6 code (BP) slots and 2 literal slots
+* JLink Info: Found Cortex-M4 r0p1, Little endian.
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: STM32F407VG
+VTarget = 3.300V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 1, TMS: 0, TRES: 1, TRST: 1
+Hardware-Breakpoints: 6
+Software-Breakpoints: 8192
+Watchpoints:          4
+JTAG speed: 500 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+Build target 'IO_Toggle'
+compiling INSEKF.c...
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=724 ZI-data=54564  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=724 ZI-data=54564  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Load "..\\Object\\skyworksF4.axf" 
+Set JLink Project File to "D:\Program Data\Dropbox\Dropbox\stm32\QUAD\F4-X450\User\JLinkSettings.ini"
+* JLink Info: Device "STM32F407VG" selected (1024 KB flash, 128 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.68a, compiled Apr 12 2013 13:26:50
+Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
+Hardware: V7.00
+S/N : 20090928 
+Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFull 
+ 
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: TPIU fitted.
+* JLink Info: ETM fitted.
+* JLink Info: FPUnit: 6 code (BP) slots and 2 literal slots
+* JLink Info: Found Cortex-M4 r0p1, Little endian.
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: STM32F407VG
+VTarget = 3.300V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 1, TMS: 0, TRES: 1, TRST: 1
+Hardware-Breakpoints: 6
+Software-Breakpoints: 8192
+Watchpoints:          4
+JTAG speed: 500 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+Build target 'IO_Toggle'
+compiling INSEKF.c...
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=796 ZI-data=54492  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+compiling INSEKF.c...
+linking...
+Program Size: Code=57884 RO-data=4808 RW-data=796 ZI-data=54492  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Load "..\\Object\\skyworksF4.axf" 
+Set JLink Project File to "D:\Program Data\Dropbox\Dropbox\stm32\QUAD\F4-X450\User\JLinkSettings.ini"
+* JLink Info: Device "STM32F407VG" selected (1024 KB flash, 128 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.68a, compiled Apr 12 2013 13:26:50
+Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
+Hardware: V7.00
+S/N : 20090928 
+Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFull 
+ 
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: TPIU fitted.
+* JLink Info: ETM fitted.
+* JLink Info: FPUnit: 6 code (BP) slots and 2 literal slots
+* JLink Info: Found Cortex-M4 r0p1, Little endian.
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: STM32F407VG
+VTarget = 3.300V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 1, TMS: 0, TRES: 1, TRST: 1
+Hardware-Breakpoints: 6
+Software-Breakpoints: 8192
+Watchpoints:          4
+JTAG speed: 500 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+Build target 'IO_Toggle'
+compiling INSEKF.c...
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=796 ZI-data=54492  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+linking...
+Program Size: Code=57948 RO-data=4808 RW-data=796 ZI-data=54492  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+compiling main.c...
+compiling flightConTask.c...
+linking...
+Program Size: Code=54784 RO-data=4124 RW-data=796 ZI-data=54132  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).
+Build target 'IO_Toggle'
+linking...
+Program Size: Code=54784 RO-data=4124 RW-data=796 ZI-data=54132  
+FromELF: creating hex file...
+"..\Object\skyworksF4.axf" - 0 Errors, 0 Warning(s).

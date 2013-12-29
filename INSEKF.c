@@ -20,10 +20,10 @@
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
 
 float navParamCur[9];	//current navigation parameters, for flight control
-float navParamK[9];	//k time navigation parameters, for GPS data fusion
-float x[9];	//navigation parameters error in time k
+float navParamK[9]={0,0,0,0,0,0,0.1,-0.37,-0.01};	//k time navigation parameters, for GPS data fusion
+float x[9] = {0,0,0,0,0,0,0.1,-0.37,-0.01};	//navigation parameters error in time k
 
-double initPos[3];
+double initPos[4];
 float Ctrans[9];
 
 float IMU_delay_buffer[GPS_DELAY_CNT*8];
@@ -42,12 +42,12 @@ const float iP[81]={
 };	//used to initialize EKF filter structure
 
 const float iQ[81]={
-		 0.0000000001,0,0,0,0,0,0,0,0
-	    ,0,0.0000000001,0,0,0,0,0,0,0
-	    ,0,0,0.0000000001,0,0,0,0,0,0
-		,0,0,0,0.0025,0,0,0,0,0
-		,0,0,0,0,0.0025,0,0,0,0
-		,0,0,0,0,0,0.0025,0,0,0
+		 0.000001,0,0,0,0,0,0,0,0
+	    ,0,0.000001,0,0,0,0,0,0,0
+	    ,0,0,0.000001,0,0,0,0,0,0
+		,0,0,0,0.025,0,0,0,0,0
+		,0,0,0,0,0.025,0,0,0,0
+		,0,0,0,0,0,0.025,0,0,0
 		,0,0,0,0,0,0,0.000000004096,0,0
 		,0,0,0,0,0,0,0,0.000000004096,0
 		,0,0,0,0,0,0,0,0,0.000000004096
@@ -191,7 +191,8 @@ void vINSAligTask(void* pvParameters)
 
 	initPos[0] = 0.0;
 	initPos[1] = 0.0;
-	initPos[2] = uw_height;
+	initPos[2] = 0.0;
+	initPos[3] = uw_height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
@@ -229,9 +230,10 @@ void vINSAligTask(void* pvParameters)
 	}
 	Quat2dcm(Ctrans, a2it.q);
 
-	initPos[0] = (Ctrans[0]*vdt.pos_x + Ctrans[1]*vdt.pos_y + Ctrans[2]*vdt.pos_z)*0.001;
-	initPos[1] = (Ctrans[3]*vdt.pos_x + Ctrans[4]*vdt.pos_y + Ctrans[5]*vdt.pos_z)*0.001;
-	initPos[2] = uw_height;
+	initPos[0] = vdt.pos_x*0.001;
+	initPos[1] = vdt.pos_y*0.001;
+	initPos[2] = vdt.pos_z*0.001;
+	initPos[3] = uw_height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
@@ -239,9 +241,9 @@ void vINSAligTask(void* pvParameters)
 	navParamK[3] = 0.0;
 	navParamK[4] = 0.0;
 	navParamK[5] = 0.0;
-	navParamK[6] = 0.0;
-	navParamK[7] = 0.0;
-	navParamK[8] = 0.0;
+	navParamK[6] = 0.1;
+	navParamK[7] = -0.37;
+	navParamK[8] = -0.01;
 	
 	x[0]=0.0;
 	x[1]=0.0;
@@ -249,9 +251,9 @@ void vINSAligTask(void* pvParameters)
 	x[3]=0.0;
 	x[4]=0.0;
 	x[5]=0.0;
-	x[6]=0.0;
-	x[7]=0.0;
-	x[8]=0.0;
+	x[6]=0.1;
+	x[7]=-0.37;
+	x[8]=-0.01;
 #endif	
 	xstatus=xTaskCreate(vIEKFProcessTask,(signed portCHAR *)"ins_ekf",configMINIMAL_STACK_SIZE+1024,(void *)NULL,tskIDLE_PRIORITY+1,NULL);
 	if(xstatus!=pdTRUE)
@@ -332,9 +334,14 @@ void vIEKFProcessTask(void* pvParameters)
 		if(xQueueReceive(xUartVisionQueue,&vdt,0) == pdPASS)
 		{
 			float meas_Err[3]={0.0};
-			measure[0] = (Ctrans[0]*vdt.pos_x + Ctrans[1]*vdt.pos_y + Ctrans[2]*vdt.pos_z)*0.001-initPos[0];
-			measure[1] = (Ctrans[3]*vdt.pos_x + Ctrans[4]*vdt.pos_y + Ctrans[5]*vdt.pos_z)*0.001-initPos[1];
-			measure[2] = uw_height-initPos[2];
+			VisionDataType ned_vdt;
+			ned_vdt.pos_x = vdt.pos_y-initPos[1];
+			ned_vdt.pos_y = vdt.pos_x-initPos[0];
+			ned_vdt.pos_z = initPos[2] - vdt.pos_z;
+			
+			measure[0] = (Ctrans[0]*ned_vdt.pos_x + Ctrans[1]*ned_vdt.pos_y + Ctrans[2]*ned_vdt.pos_z)*0.001;
+			measure[1] = (Ctrans[3]*ned_vdt.pos_x + Ctrans[4]*ned_vdt.pos_y + Ctrans[5]*ned_vdt.pos_z)*0.001;
+			measure[2] = uw_height-initPos[3];
 			
 			for(i=0;i<3;i++)
 			{
@@ -369,7 +376,9 @@ void vIEKFProcessTask(void* pvParameters)
 //				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
 				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 							,navParamK[0],navParamK[1],navParamK[2]
-							,measure[0],measure[1],measure[2]);
+							,navParamK[3],navParamK[4],navParamK[5]);
+//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
+//							,cur_a2it.acc[0], cur_a2it.acc[1], cur_a2it.acc[2]);
 				UartSend(printf_buffer, string_len);
 			}
 			/*
