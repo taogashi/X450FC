@@ -43,7 +43,7 @@ void USART1_IRQHandler(void)
 		}
 		else
 		{	
-			if(byteCNT > 5)
+			if(byteCNT > 1)
 			{
 				uart2Cache1[byteCNT]='\0';
 				memcpy(uart2Cache2,uart2Cache1,byteCNT+1);

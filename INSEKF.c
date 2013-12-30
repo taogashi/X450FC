@@ -270,11 +270,11 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
-	char printf_buffer[100];
-	u16 string_len;
+//	char printf_buffer[100];
+//	u16 string_len;
+//	u8 CNT=0;
 	
-	u8 i;
-	u8 CNT=0;
+	u8 i;	
 	u8 acc_bias_stable = 0;	//indicate whether acc bias is stably estimated
 //	char logData[100]={0};
 	
@@ -370,17 +370,17 @@ void vIEKFProcessTask(void* pvParameters)
 						, NULL
 						, (void *)(filter->x)
 						, NULL);	
-			if(CNT++ >= 4)
-			{
-				CNT = 0;
-//				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
-				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-							,navParamK[0],navParamK[1],navParamK[2]
-							,navParamK[3],navParamK[4],navParamK[5]);
-//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
-//							,cur_a2it.acc[0], cur_a2it.acc[1], cur_a2it.acc[2]);
-				UartSend(printf_buffer, string_len);
-			}
+//			if(CNT++ >= 4)
+//			{
+//				CNT = 0;
+////				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
+//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//							,navParamK[0],navParamK[1],navParamK[2]
+//							,navParamK[3],navParamK[4],navParamK[5]);
+////				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
+////							,cur_a2it.acc[0], cur_a2it.acc[1], cur_a2it.acc[2]);
+//				UartSend(printf_buffer, string_len);
+//			}
 			/*
 			 *correct navParamCur
 			 */
