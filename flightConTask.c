@@ -357,12 +357,15 @@ void vFlyConTask(void* pvParameters)
 								, NULL
 								, NULL);
 			if((fbvt.velo_valid & VELO_X_VALID) != 0)
+			{
 				PIDProccessing(&(system_ctrler.velo_x_ctrler)
-								, system_ctrler.px_ctrler.output
+								, 0.0
 								, fbvt.velo_x
 								, 0.03
 								, NULL
 								, NULL);
+				system_ctrler.velo_x_ctrler.output += system_ctrler.px_ctrler.output;
+			}
 			/* y */
 			if((fbvt.pos_valid & POS_Y_VALID) != 0)
 				PIDProccessing(&(system_ctrler.py_ctrler)
@@ -372,14 +375,18 @@ void vFlyConTask(void* pvParameters)
 								, NULL
 								, NULL);
 			if((fbvt.velo_valid & VELO_Y_VALID) != 0)
+			{
 				PIDProccessing(&(system_ctrler.velo_y_ctrler)
-								, system_ctrler.py_ctrler.output
+								, 0.0
 								, fbvt.velo_y
 								, 0.03
 								, NULL
 								, NULL);
-			Pos2AngleMixer(system_ctrler.px_ctrler.output
-						, system_ctrler.py_ctrler.output
+				system_ctrler.velo_y_ctrler.output += system_ctrler.py_ctrler.output;
+			}
+					
+			Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
+						, system_ctrler.velo_y_ctrler.output
 						, &odt
 						, fbvt.yaw_angle);
 		}
@@ -518,22 +525,22 @@ void vFlyConTask(void* pvParameters)
 //									, system_ctrler.py_ctrler.output
 //									, system_ctrler.velo_x_ctrler.output
 //									, system_ctrler.velo_y_ctrler.output);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-//									, pos_x_locked
-//									, pos_y_locked
-//									, fbvt.pos_x
-//									, fbvt.pos_y);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+									, fbvt.velo_x
+									, fbvt.velo_y
+									, system_ctrler.px_ctrler.output
+									, system_ctrler.py_ctrler.output
+									, system_ctrler.velo_x_ctrler.output
+									, system_ctrler.velo_y_ctrler.output);
 //			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %d %d\r\n"
-						, fbvt.pos_x
-						, fbvt.pos_y
-						, fbvt.pos_z
-						, fbvt.velo_x
-						, fbvt.velo_y
-						, fbvt.velo_z
-						, odt.hover_en
-						, odt.lock_en);
+//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//						, fbvt.pos_x
+//						, fbvt.pos_y
+//						, fbvt.pos_z
+//						, fbvt.velo_x
+//						, fbvt.velo_y
+//						, fbvt.velo_z);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 			UartSend(printf_buffer,string_len);
 		}

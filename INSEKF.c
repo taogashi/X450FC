@@ -372,12 +372,13 @@ void vIEKFProcessTask(void* pvParameters)
 //			{
 //				CNT = 0;
 ////				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
-//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//							,navParamK[0],navParamK[1],navParamK[2]
-//							,navParamK[3],navParamK[4],navParamK[5]);
+////				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+////							,navParamK[0],navParamK[1],navParamK[2]
+////							,navParamK[3],navParamK[4],navParamK[5]
+////							,navParamK[6],navParamK[7],navParamK[8]);
 ////				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
 ////							,cur_a2it.acc[0], cur_a2it.acc[1], cur_a2it.acc[2]);
-//				UartSend(printf_buffer, string_len);
+////				UartSend(printf_buffer, string_len);
 //			}
 			/*
 			 *correct navParamCur
