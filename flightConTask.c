@@ -251,6 +251,7 @@ void vFlyConTask(void* pvParameters)
 	float pos_y_locked = 0.0;
 	float height_locked = 0.0;
 	float yaw_angle_locked = 0.0;
+	
 	AHRSDataType adt;
 	PosDataType pdt;
 	
@@ -268,6 +269,7 @@ void vFlyConTask(void* pvParameters)
 
 	portTickType lastTime;
 
+	Blinks(LED1,4);
 	/******************* initialize *************************************/
 	xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
 	yaw_angle_locked = adt.yawAngle;
@@ -287,9 +289,11 @@ void vFlyConTask(void* pvParameters)
 	TIM4_IT_Config();
 	TIM5_IT_Config();
 	
-	/*wait signal*/
+	/******************* wait signal ****************************/
+	Blinks(LED1,3);
 	WaitRCSignal();
 	
+	Blinks(LED1,2);
 	lastTime = xTaskGetTickCount();
 
 	for(;;)
@@ -318,6 +322,8 @@ void vFlyConTask(void* pvParameters)
 			fbvt.velo_y = pdt.veloY;
 			fbvt.velo_z = pdt.veloZ;
 			fbvt.velo_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
+			
+			Blinks(LED1,1);
 		}
 		else
 		{
@@ -487,6 +493,15 @@ void vFlyConTask(void* pvParameters)
 		
 		/************* decouple	 *************************/
 		OutputControl(&cpt, &opt);
+		
+		/************* drive motor ***********************/
+		if(odt.thrustOrder < 0.05)
+		{
+			opt.motor1_Out = 100;
+			opt.motor2_Out = 100;
+			opt.motor3_Out = 100;
+			opt.motor4_Out = 100;
+		}
 		WriteMotor(&opt);
 
 		/************ print message **********************/
@@ -510,12 +525,15 @@ void vFlyConTask(void* pvParameters)
 //									, fbvt.pos_y);
 //			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f\r\n"
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %d %d\r\n"
+						, fbvt.pos_x
+						, fbvt.pos_y
 						, fbvt.pos_z
+						, fbvt.velo_x
+						, fbvt.velo_y
 						, fbvt.velo_z
-						, system_ctrler.height_ctrler.output
-						, system_ctrler.velo_z_ctrler.output
-						, cpt.thrust_out);
+						, odt.hover_en
+						, odt.lock_en);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 			UartSend(printf_buffer,string_len);
 		}
@@ -568,7 +586,6 @@ void LoadParam(void)
 			UartSend(print_buffer, string_len);
 			vTaskDelay((portTickType)(300/portTICK_RATE_MS));
 		}
-		Blinks(LED1,1);
 	}
 	//if fails, read from uart
 	else
@@ -596,7 +613,6 @@ void LoadParam(void)
 			}
 			vTaskDelay((portTickType)(20/portTICK_RATE_MS));
 		}
-		Blinks(LED1,1);
 	}	
 }
 

@@ -166,7 +166,6 @@ void vINSAligTask(void* pvParameters)
 	
 	/**/
 	xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);	//capture an INS frame	 
-	Blinks(LED1,2);
 
 #ifdef INS_DEBUG	
 	/*GPS data is not needed in debug mode*/
@@ -301,7 +300,6 @@ void vIEKFProcessTask(void* pvParameters)
 	GetUltraSonicMeasure(&uw_height);
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&cur_a2it,portMAX_DELAY);
-	Blinks(LED1,4);
 	
 	for(;;)
 	{
@@ -443,7 +441,6 @@ void vIEKFProcessTask(void* pvParameters)
 					
 					INS_Update(navParamCur,&cur_a2it);
 				}
-				Blinks(LED1,1);
 			}
 		}
 		else
