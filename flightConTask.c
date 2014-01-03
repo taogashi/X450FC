@@ -75,7 +75,7 @@ void ControllerInit(void);
 */
 void ControllerUpdate(u16 index);
 void ResetCtrler(PIDCtrlerType *ctrler);
-void PIDProccessing(PIDCtrlerType *ctrler, float in, float fb, float dt, GFilterType *d_filter, GFilterType *filter);
+void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info);
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle);
 
 //void PosControl(OrderType* odt,PosConDataType* pcdt,AttConDataType *acdt,OptionalPara* OP)//
@@ -254,6 +254,7 @@ void vFlyConTask(void* pvParameters)
 	
 	AHRSDataType adt;
 	PosDataType pdt;
+	PIDCtrlerAuxiliaryType ctrler_input;
 	
 	//orders from remote controller
 	OrderType odt;
@@ -805,21 +806,23 @@ void ResetCtrler(PIDCtrlerType *ctrler)
 	ctrler->prev_err = 0.0;
 }
 
-void PIDProccessing(PIDCtrlerType *ctrler, float in, float fb, float dt, GFilterType *d_filter, GFilterType *filter)
+void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
 {
-	ctrler->desired = in;
-	ctrler->actual = fb;
+	ctrler->desired = info->in;
+	ctrler->actual = info->fb;
 	
 	ctrler->err = ctrler->desired - ctrler->actual;
-	if(filter != NULL)
-		ctrler->err = GaussianFilter(filter, ctrler->err);
+	if(info->err_filter != NULL)
+		ctrler->err = GaussianFilter((GFilterType *)(info->err_filter), ctrler->err);
 	
-	ctrler->deriv = (ctrler->err - ctrler->prev_err)/dt;
-	if(d_filter != NULL)
-		ctrler->deriv = GaussianFilter(d_filter, ctrler->deriv);
+	if(info->use_ref_diff == 0)
+		ctrler->deriv = (ctrler->err - ctrler->prev_err)/info->dt;
+	
+	if(info->deriv_filter != NULL)
+		ctrler->deriv = GaussianFilter((GFilterType *)(info->deriv_filter), ctrler->deriv);
 	
 	ctrler->prev_err = ctrler->err;
-	ctrler->integ += ctrler->err*dt;
+	ctrler->integ += ctrler->err*info->dt;
 	
 	if(ctrler->integ > ctrler->i_limit)
 		ctrler->integ = ctrler->i_limit;
@@ -834,6 +837,8 @@ void PIDProccessing(PIDCtrlerType *ctrler, float in, float fb, float dt, GFilter
 	ctrler->output = ctrler->kp * ctrler->err 
 					+ ctrler->ki * ctrler->integ
 					+ ctrler->kd * ctrler->deriv;
+	
+	if(ctrler->output > ctrler->out_limit)
 }
 
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)

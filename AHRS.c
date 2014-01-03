@@ -88,17 +88,18 @@ void Delay_us(__IO uint32_t nCount)
 }
 
 u8 ReadAHRSRaw(SensorDataType* sd)
-{
-	static u8 j=0;
+{	
 	u8 i;
 	ComType cmt;
-	u8 bbstatus=0;
+
 	s32 CheckSum=0;
 	u8 ret=0;
 	static u32 hit=0;
 	static u32 miss=0;
 
 #ifndef AHRS_SPI_INT_MODE
+	static u8 j=0;
+	u8 bbstatus=0;
 	u8 byteToRead = 26;//sizeof(ComType);
 	
 	AHRS_SPI_CS_LOW();
