@@ -254,10 +254,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>23</ColumnNumber>
+      <ColumnNumber>30</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>91</TopLine>
-      <CurrentLine>98</CurrentLine>
+      <TopLine>82</TopLine>
+      <CurrentLine>95</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\main.c</PathWithFileName>
       <FilenameWithoutPath>main.c</FilenameWithoutPath>
@@ -302,10 +302,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>18</ColumnNumber>
+      <ColumnNumber>36</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>12</TopLine>
-      <CurrentLine>18</CurrentLine>
+      <TopLine>13</TopLine>
+      <CurrentLine>38</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\sensor.c</PathWithFileName>
       <FilenameWithoutPath>sensor.c</FilenameWithoutPath>
@@ -350,10 +350,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>16</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>259</TopLine>
-      <CurrentLine>51</CurrentLine>
+      <TopLine>173</TopLine>
+      <CurrentLine>189</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\AHRSEKF.c</PathWithFileName>
       <FilenameWithoutPath>AHRSEKF.c</FilenameWithoutPath>
@@ -444,12 +444,12 @@
       <GroupNumber>1</GroupNumber>
       <FileNumber>13</FileNumber>
       <FileType>1</FileType>
-      <tvExp>0</tvExp>
+      <tvExp>1</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>42</ColumnNumber>
+      <ColumnNumber>46</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>711</TopLine>
-      <CurrentLine>841</CurrentLine>
+      <TopLine>501</TopLine>
+      <CurrentLine>518</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\flightConTask.c</PathWithFileName>
       <FilenameWithoutPath>flightConTask.c</FilenameWithoutPath>
@@ -464,8 +464,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>9</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\filter.c</PathWithFileName>
       <FilenameWithoutPath>filter.c</FilenameWithoutPath>
@@ -672,8 +672,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>165</TopLine>
+      <CurrentLine>175</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\StartUp\startup_stm32f4xx.s</PathWithFileName>
       <FilenameWithoutPath>startup_stm32f4xx.s</FilenameWithoutPath>
@@ -926,10 +926,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>4</ColumnNumber>
+      <ColumnNumber>1</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>88</TopLine>
-      <CurrentLine>101</CurrentLine>
+      <TopLine>215</TopLine>
+      <CurrentLine>216</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\AHRS.c</PathWithFileName>
       <FilenameWithoutPath>AHRS.c</FilenameWithoutPath>

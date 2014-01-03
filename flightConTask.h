@@ -126,10 +126,10 @@ typedef struct{
 	u8 maxSpeed;	//
 	u16 time;	//0.1s/count
 	u16 posAcrcy;	//in mm
+	int yaw;	//deg
 	int x;		//mm
 	int y;		//mm
 	int height;	//mm
-	int yaw;	//deg
 }WayPointType;
 
 extern OptionalPara optional_param_global;

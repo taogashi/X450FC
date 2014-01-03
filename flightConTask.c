@@ -77,164 +77,9 @@ void ControllerUpdate(u16 index);
 void ResetCtrler(PIDCtrlerType *ctrler);
 void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info);
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle);
-
-//void PosControl(OrderType* odt,PosConDataType* pcdt,AttConDataType *acdt,OptionalPara* OP)//
-//{
-//	static float targetXPos=0.0;
-//	static float targetYPos=0.0;
-//	float xPosErr=0.0;
-//	float yPosErr=0.0;
-//	static float xPosErrIntg=0.0;
-//	static float yPosErrIntg=0.0;
-
-//	float tarHeight=odt->thrustOrder*20.0;
-//	float heightErr=0.0;
-//	static float heightErrInteg=0.0;
-
-//	float xPID,yPID;
-//	
-////	char printf_buffer[100];
-//	//高度控制
-////	if(odt->thrustOrder<0.05) odt->thrustOut=0;
-////	else
-////	{
-////		//高度误差
-////		heightErr = pcdt->posZ-tarHeight;
-////		//高度误差积分
-////		heightErrInteg+=heightErr*0.005; 
-////		//积分限幅
-////		if(heightErrInteg>1.0) heightErrInteg=1.0;
-////		if(heightErrInteg<-1.0) heightErrInteg=-1.0;
-////	
-////		odt->thrustOut=OP->hoverThrust - OP->heightP*heightErr + OP->heightD*pcdt->veloZ - OP->heightI*heightErrInteg;
-////	}
-////
-////	if(odt->thrustOut>1) odt->thrustOut=1;
-////	else if(odt->thrustOut<0) odt->thrustOut=0;
-
-////	if(pcdt->veloZ<0.03 && pcdt->veloZ>-0.03 && odt->thrustOut>0.4) OP->hoverThrust=0.99*OP->hoverThrust+0.01*odt->thrustOut;
-
-//	//水平位置控制
-//	if(tim5IC1Width>1500)
-//	{
-//		targetXPos=pcdt->posX;
-//		targetYPos=pcdt->posY;
-//		xPosErrIntg = 0.0;
-//		yPosErrIntg = 0.0;
-//	}
-//	else
-//	{
-//		if((odt->rollOrder<0.02 && odt->rollOrder>-0.02) && (odt->pitchOrder<0.02 && odt->pitchOrder>-0.02))
-//		{
-//			float cosfi = arm_cos_f32(acdt->yawAngle);
-//			float sinfi = arm_sin_f32(acdt->yawAngle);	
-//			xPosErr=pcdt->posX-targetXPos;
-//			yPosErr=pcdt->posY-targetYPos;
-//			xPosErrIntg += xPosErr*0.01;
-//			if(xPosErrIntg > 50.0) xPosErrIntg=50.0;
-//			else if(xPosErrIntg <-50.0) xPosErrIntg=-50.0;
-//			yPosErrIntg += yPosErr;
-//			if(yPosErrIntg > 50.0) yPosErrIntg=50.0;
-//			else if(yPosErrIntg <-50.0) yPosErrIntg=-50.0;
-//			
-//			/*PID*/
-//			xPID = OP->horiP*xPosErr + OP->horiD*pcdt->veloX + OP->horiI*xPosErrIntg;
-//			yPID = OP->horiP*yPosErr + OP->horiD*pcdt->veloY + OP->horiI*yPosErrIntg;
-//			
-//			/*decouple*/
-//			odt->pitchOrder = 0.03*(xPID*cosfi+yPID*sinfi);
-//			if(odt->pitchOrder > 0.18) odt->pitchOrder=0.18;
-//			else if(odt->pitchOrder < -0.18) odt->pitchOrder=-0.18;
-
-//			odt->rollOrder = -0.03*(-xPID*sinfi+yPID*cosfi);
-//			if(odt->rollOrder > 0.18) odt->rollOrder=0.18;
-//			else if(odt->rollOrder < -0.18) odt->rollOrder=-0.18;
-//			
-////			sprintf(printf_buffer,"%.2f %.2f\r\n",xPosErr,yPosErr);
-////			UartSend(printf_buffer,strlen(printf_buffer));
-//		}	
-//		else
-//		{
-//			targetXPos=pcdt->posX;
-//			targetYPos=pcdt->posX;
-//			xPosErrIntg=0.0;
-//			yPosErrIntg=0.0;
-//		}	
-//	}
-//	odt->thrustOut=odt->thrustOrder;
-//}
-
-/* 作用：根据acvt指令和姿态控制量，计算输出给四个电机的转速指令
- * 参数：
- * 	odt
- * 	opt
- * 返回值：无*/
-void OutputControl(CtrlProcType *cpt, OutputType* opt)
-{
-	s16 youmenOut=200+(s16)(cpt->thrust_out*800);
-	if(youmenOut<250) youmenOut=100;
-	
-	opt->motor1_Out = youmenOut + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor2_Out = youmenOut + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
-	opt->motor3_Out = youmenOut - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
-
-	if(opt->motor1_Out<250) 
-		opt->motor1_Out=100;
-	else if(opt->motor1_Out>1100) 
-		opt->motor1_Out=1100; 
-
-	if(opt->motor2_Out<250) 
-		opt->motor2_Out=100;
-	else if(opt->motor2_Out>1100) 
-		opt->motor2_Out=1100;
-
-	if(opt->motor3_Out<250) 
-		opt->motor3_Out=100;
-	else if(opt->motor3_Out>1100) 
-		opt->motor3_Out=1100;
-
-	if(opt->motor4_Out<250) 
-		opt->motor4_Out=100;
-	else if(opt->motor4_Out>1100) 
-		opt->motor4_Out=1100;
-	
-	if(cpt->thrust_out<0.05)
-	{
-		opt->motor1_Out = 100;
-		opt->motor2_Out = 100;
-		opt->motor3_Out = 100;
-		opt->motor4_Out = 100;
-	}
-}
-
-/* 作用：输出指令控制电机转速
- * 参数：opt
- * 返回值：无*/
-void WriteMotor(OutputType* opt)
-{
-	TIM_SetCompare1(TIM3,opt->motor1_Out);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,opt->motor2_Out);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,opt->motor3_Out);	//youmenOut	  
-	TIM_SetCompare4(TIM3,opt->motor4_Out);	//youmenOut	
-
-//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-//	TIM_SetCompare4(TIM3,100);	//youmenOut	
-}	
-
-void WaitRCSignal(void)
-{
-	while(tim4IC1Width<1800)
-	{
-		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
-	}
-	while(tim4IC1Width>1800)
-	{
-		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
-	}
-}
+void OutputControl(CtrlProcType *cpt, OutputType* opt);
+void WriteMotor(OutputType* opt);
+void WaitRCSignal(void);
 
 void vFlyConTask(void* pvParameters)
 {
@@ -247,6 +92,15 @@ void vFlyConTask(void* pvParameters)
 	portBASE_TYPE xstatus;
 	u16 index;
 	
+	WayPointType wpt = {
+		0		//normal
+		,255	//maxSpeed
+		,65535	//max stay time
+		,200	//200mm position accuracy
+		,0		//yaw
+		,0		//x
+		,0		//y
+		,0};	//height
 	float pos_x_locked = 0.0;
 	float pos_y_locked = 0.0;
 	float height_locked = 0.0;
@@ -254,7 +108,7 @@ void vFlyConTask(void* pvParameters)
 	
 	AHRSDataType adt;
 	PosDataType pdt;
-	PIDCtrlerAuxiliaryType ctrler_input;
+	PIDCtrlerAuxiliaryType msg2ctrler;
 	
 	//orders from remote controller
 	OrderType odt;
@@ -278,7 +132,7 @@ void vFlyConTask(void* pvParameters)
 	optional_param_global.RCneutral[1] = 1500;
 	optional_param_global.RCneutral[2] = 1100;
 	optional_param_global.RCneutral[3] = 1500;
-	optional_param_global.miscel[0] = 0.48;
+	optional_param_global.miscel[0] = 0.46;
 	
 	/****************** parameters read form disk ***********************/
 	LoadParam();
@@ -660,19 +514,20 @@ void ControllerInit(void)
 	system_ctrler.rollrate_ctrler.ki = optional_param_global.loop_pid[0].xPID[1];
 	system_ctrler.rollrate_ctrler.kd = optional_param_global.loop_pid[0].xPID[2];
 	system_ctrler.rollrate_ctrler.i_limit = 0.6;
-	system_ctrler.rollrate_ctrler.d_limit = 15.0;
+	system_ctrler.rollrate_ctrler.d_limit = 10.0;
+	system_ctrler.rollrate_ctrler.out_limit = 
 	
 	system_ctrler.pitchrate_ctrler.kp = optional_param_global.loop_pid[0].yPID[0];
 	system_ctrler.pitchrate_ctrler.ki = optional_param_global.loop_pid[0].yPID[1];
 	system_ctrler.pitchrate_ctrler.kd = optional_param_global.loop_pid[0].yPID[2];
 	system_ctrler.pitchrate_ctrler.i_limit = 0.6;
-	system_ctrler.pitchrate_ctrler.d_limit = 1.0;
+	system_ctrler.pitchrate_ctrler.d_limit = 10.0;
 	
 	system_ctrler.yawrate_ctrler.kp = optional_param_global.loop_pid[0].zPID[0];
 	system_ctrler.yawrate_ctrler.ki = optional_param_global.loop_pid[0].zPID[1];
 	system_ctrler.yawrate_ctrler.kd = optional_param_global.loop_pid[0].zPID[2];
 	system_ctrler.yawrate_ctrler.i_limit = 0.6;
-	system_ctrler.yawrate_ctrler.d_limit = 1.0;
+	system_ctrler.yawrate_ctrler.d_limit = 10.0;
 	
 	/*angle loop*/
 	system_ctrler.roll_ctrler.kp = optional_param_global.loop_pid[1].xPID[0];
@@ -839,6 +694,9 @@ void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
 					+ ctrler->kd * ctrler->deriv;
 	
 	if(ctrler->output > ctrler->out_limit)
+		ctrler->output = ctrler->out_limit;
+	else if(ctrler->output < -ctrler->out_limit)
+		ctrler->output = -ctrler->out_limit;
 }
 
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
@@ -848,4 +706,77 @@ void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
 	/*decouple*/
 	odt->pitchOrder = -(xPID*cosfi+yPID*sinfi);
 	odt->rollOrder = -xPID*sinfi+yPID*cosfi;
+}
+
+void OutputControl(CtrlProcType *cpt, OutputType* opt)
+{
+	s16 youmenOut=200+(s16)(cpt->thrust_out*800);
+	if(youmenOut<250) youmenOut=100;
+	
+	opt->motor1_Out = youmenOut + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+	opt->motor2_Out = youmenOut + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+	opt->motor3_Out = youmenOut - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+
+	if(opt->motor1_Out<250) 
+		opt->motor1_Out=100;
+	else if(opt->motor1_Out>1100) 
+		opt->motor1_Out=1100; 
+
+	if(opt->motor2_Out<250) 
+		opt->motor2_Out=100;
+	else if(opt->motor2_Out>1100) 
+		opt->motor2_Out=1100;
+
+	if(opt->motor3_Out<250) 
+		opt->motor3_Out=100;
+	else if(opt->motor3_Out>1100) 
+		opt->motor3_Out=1100;
+
+	if(opt->motor4_Out<250) 
+		opt->motor4_Out=100;
+	else if(opt->motor4_Out>1100) 
+		opt->motor4_Out=1100;
+	
+	if(cpt->thrust_out<0.05)
+	{
+		opt->motor1_Out = 100;
+		opt->motor2_Out = 100;
+		opt->motor3_Out = 100;
+		opt->motor4_Out = 100;
+	}
+}
+
+void WriteMotor(OutputType* opt)
+{
+	TIM_SetCompare1(TIM3,opt->motor1_Out);	//youmenOut 	 
+	TIM_SetCompare2(TIM3,opt->motor2_Out);	//youmenOut 	  
+	TIM_SetCompare3(TIM3,opt->motor3_Out);	//youmenOut	  
+	TIM_SetCompare4(TIM3,opt->motor4_Out);	//youmenOut	
+
+//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,100);	//youmenOut	
+}	
+
+/* roll the roll-stick rightmost to leftmost to start*/
+void WaitRCSignal(void)
+{
+	while(tim4IC1Width<1800)
+	{
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
+	while(tim4IC1Width>1800)
+	{
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
+	while(tim4IC1Width>1200)
+	{
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
+	while(tim4IC1Width<1200)
+	{
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
 }
