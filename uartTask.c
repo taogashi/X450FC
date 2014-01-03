@@ -43,7 +43,7 @@ void USART1_IRQHandler(void)
 		}
 		else
 		{	
-			if(byteCNT > 5)
+			if(byteCNT > 1)
 			{
 				uart2Cache1[byteCNT]='\0';
 				memcpy(uart2Cache2,uart2Cache1,byteCNT+1);
@@ -152,7 +152,7 @@ void vUartRecTask(void* pvParameters)
 			if((keyword=strstr(buffer, "POS")) != NULL)
 			{
 				sscanf(keyword,"POS,%hd,%hd,%hd,%hd"
-						,&(vdt.pos_y),&(vdt.pos_x),&(vdt.pos_z),&(vdt.chksm));
+						,&(vdt.pos_x),&(vdt.pos_y),&(vdt.pos_z),&(vdt.chksm));
 				if(vdt.pos_x + vdt.pos_y + vdt.pos_z == vdt.chksm)
 				{
 					xQueueSend(xUartVisionQueue, &vdt, 0);
