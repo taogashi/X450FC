@@ -38,10 +38,10 @@ u16	tim5CurIC4Value=0;
 
 void TIM3_Config(void)
 {
-	uint16_t CCR1_Val = 100;
-	uint16_t CCR2_Val = 100;
-	uint16_t CCR3_Val = 100;
-	uint16_t CCR4_Val = 100;
+	uint16_t CCR1_Val = 1000;
+	uint16_t CCR2_Val = 1000;
+	uint16_t CCR3_Val = 1000;
+	uint16_t CCR4_Val = 1000;
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	TIM_TimeBaseInitTypeDef TIM_BaseInitStructure; 
@@ -49,7 +49,6 @@ void TIM3_Config(void)
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE); 	//使能定时器2时钟
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOA, ENABLE);
-
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
    	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
@@ -66,7 +65,7 @@ void TIM3_Config(void)
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_TIM3);
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_TIM3);
 
-	TIM_BaseInitStructure.TIM_Period = 2000; //5ms       //定时器3计时周期   
+	TIM_BaseInitStructure.TIM_Period = 5000; //5ms       //定时器3计时周期   
     TIM_BaseInitStructure.TIM_Prescaler = (uint16_t) ((SystemCoreClock/2) / 1000000) - 1; //1us       
     TIM_BaseInitStructure.TIM_ClockDivision = 0;     
     TIM_BaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;    //向上计数
