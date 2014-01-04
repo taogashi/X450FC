@@ -440,12 +440,12 @@ void vFlyConTask(void* pvParameters)
 //						, fbvt.velo_y
 //						, fbvt.velo_z);
 			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-									, fbvt.roll_angle
-									, fbvt.pitch_angle
-									, fbvt.yaw_angle
-									, fbvt.roll_rate
-									, fbvt.pitch_rate
-									, fbvt.yaw_rate);
+									, fbvt.roll_angle*57.3
+									, fbvt.pitch_angle*57.3
+									, fbvt.yaw_angle*57.3
+									, fbvt.roll_rate*57.3
+									, fbvt.pitch_rate*57.3
+									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 			UartSend(printf_buffer,string_len);
 		}
