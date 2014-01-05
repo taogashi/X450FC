@@ -784,10 +784,15 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 {
 	s16 youmenOut=1000+(s16)(cpt->thrust_out*800);
 	
-	opt->motor1_Out = youmenOut + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor2_Out = youmenOut + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
-	opt->motor3_Out = youmenOut - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+//	opt->motor1_Out = youmenOut + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+//	opt->motor2_Out = youmenOut + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+//	opt->motor3_Out = youmenOut - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+//	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+	
+	opt->motor1_Out = youmenOut + cpt->pitch_moment - cpt->yaw_moment;
+	opt->motor2_Out = youmenOut + cpt->roll_moment  + cpt->yaw_moment;
+	opt->motor3_Out = youmenOut - cpt->pitch_moment - cpt->yaw_moment;
+	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->yaw_moment;
 
 	if(opt->motor1_Out<1000) 
 		opt->motor1_Out=1000;
