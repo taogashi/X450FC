@@ -1,3 +1,4 @@
+--------------------------------------------------
 This is a Quadrotor flight control program.
 Main features:
 	1.freeRTOS inside;
@@ -5,3 +6,8 @@ Main features:
 	3.most parameters can update online via uart;
 	4.use adis16405, SPI master mode, interrupt enable;
 	5.flight control task runs @200Hz
+
+14.01.2014
+BYYS
+
+1. for XAircraft 450, ADXRS620

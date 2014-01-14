@@ -100,7 +100,7 @@ void vFlyConTask(void* pvParameters)
 	OrderType odt;
 
 	//final thrust output to each motor
-	OutputType opt={1000,1000,1000,1000};
+	OutputType opt={100,100,100,100};
 
 	portTickType lastTime;
 
@@ -402,10 +402,10 @@ void vFlyConTask(void* pvParameters)
 		/************* drive motor ***********************/
 		if(odt.thrustOrder < 0.05)
 		{
-			opt.motor1_Out = 1000;
-			opt.motor2_Out = 1000;
-			opt.motor3_Out = 1000;
-			opt.motor4_Out = 1000;
+			opt.motor1_Out = 100;
+			opt.motor2_Out = 100;
+			opt.motor3_Out = 100;
+			opt.motor4_Out = 100;
 		}
 		WriteMotor(&opt);
 
@@ -447,6 +447,11 @@ void vFlyConTask(void* pvParameters)
 									, fbvt.pitch_rate*57.3
 									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
+//			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
+//									, opt.motor1_Out
+//									, opt.motor2_Out
+//									, opt.motor3_Out
+//									, opt.motor4_Out);
 			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
@@ -782,44 +787,44 @@ void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
 
 void OutputControl(CtrlProcType *cpt, OutputType* opt)
 {
-	s16 youmenOut=1000+(s16)(cpt->thrust_out*800);
+	s16 youmenOut=200+(s16)(cpt->thrust_out*800);
 	
-//	opt->motor1_Out = youmenOut + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
-//	opt->motor2_Out = youmenOut + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
-//	opt->motor3_Out = youmenOut - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
-//	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+	opt->motor1_Out = youmenOut + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+	opt->motor2_Out = youmenOut + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+	opt->motor3_Out = youmenOut - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
 	
-	opt->motor1_Out = youmenOut + cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor2_Out = youmenOut + cpt->roll_moment  + cpt->yaw_moment;
-	opt->motor3_Out = youmenOut - cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->yaw_moment;
+//	opt->motor1_Out = youmenOut + cpt->pitch_moment - cpt->yaw_moment;
+//	opt->motor2_Out = youmenOut + cpt->roll_moment  + cpt->yaw_moment;
+//	opt->motor3_Out = youmenOut - cpt->pitch_moment - cpt->yaw_moment;
+//	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->yaw_moment;
 
-	if(opt->motor1_Out<1000) 
-		opt->motor1_Out=1000;
-	else if(opt->motor1_Out>1900) 
-		opt->motor1_Out=1900; 
+	if(opt->motor1_Out<230) 
+		opt->motor1_Out=100;
+	else if(opt->motor1_Out>1100) 
+		opt->motor1_Out=1100; 
 
-	if(opt->motor2_Out<1000) 
-		opt->motor2_Out=1000;
-	else if(opt->motor2_Out>1900) 
-		opt->motor2_Out=1900;
+	if(opt->motor2_Out<230) 
+		opt->motor2_Out=100;
+	else if(opt->motor2_Out>1100) 
+		opt->motor2_Out=1100;
 
-	if(opt->motor3_Out<1000) 
-		opt->motor3_Out=1000;
-	else if(opt->motor3_Out>1900) 
-		opt->motor3_Out=1900;
+	if(opt->motor3_Out<230) 
+		opt->motor3_Out=100;
+	else if(opt->motor3_Out>1100) 
+		opt->motor3_Out=1100;
 
-	if(opt->motor4_Out<1000) 
-		opt->motor4_Out=1000;
-	else if(opt->motor4_Out>1900) 
-		opt->motor4_Out=1900;
+	if(opt->motor4_Out<230) 
+		opt->motor4_Out=100;
+	else if(opt->motor4_Out>1100) 
+		opt->motor4_Out=1100;
 	
 	if(cpt->thrust_out<0.05)
 	{
-		opt->motor1_Out = 1000;
-		opt->motor2_Out = 1000;
-		opt->motor3_Out = 1000;
-		opt->motor4_Out = 1000;
+		opt->motor1_Out = 100;
+		opt->motor2_Out = 100;
+		opt->motor3_Out = 100;
+		opt->motor4_Out = 100;
 	}
 }
 
