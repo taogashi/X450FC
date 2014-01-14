@@ -3,6 +3,7 @@
 *.crf
 *.dep
 *.bak
+*.yangsheng
 
 # Object files
 *.o
