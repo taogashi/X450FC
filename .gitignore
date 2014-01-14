@@ -1,8 +1,6 @@
 # Mid files
 *.d
 *.crf
-*.dep
-*.bak
 
 # Object files
 *.o
@@ -22,7 +20,14 @@
 *.exe
 *.out
 *.app
+*.hex
 
 # Other files
-*.uvgui*.*
-*.txt
+*.uvgui*
+*.bak
+*.dep
+*.axf
+*.htm
+*.lnp
+*.sct
+*.iex
