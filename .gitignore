@@ -23,3 +23,9 @@
 
 # Other files
 *.uvgui*.*
+*.dep
+*.axf
+*.hex
+*.htm
+*.lnp
+*.sct
