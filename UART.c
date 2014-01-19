@@ -260,10 +260,10 @@ u8 UartSend(char* content, u16 num)
 	total_byte = occupied_buffer + num;
 	
 	/*if DMA is ready, put data to DMA buffer anyway*/
-	if(DMA_Transmit_Complete == 1)
+	if(DMA_Transmit_Complete == 1 && total_byte > 0)
 	{
 		/* Disable DMA stream
-		 * this step is neccessary
+		 * this step is neccessary 
 		 * DMA stream must be disabled before calling DMA_SetCurrDataCounter()
 		 * ref@ 
 		 */
@@ -314,6 +314,7 @@ u8 UartSend(char* content, u16 num)
 			}
 			uart_user_tx_buffer.header = 0;
 			uart_user_tx_buffer.tail = 0;
+			/* the rest of the content put into user_tx_buffer */
 			for(i=0; i<total_byte-UART_TX_BUFFER_LENGTH; i++)
 			{
 				uart_user_tx_buffer.buffer[uart_user_tx_buffer.header++] = content[UART_TX_BUFFER_LENGTH-occupied_buffer+i];

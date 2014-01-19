@@ -80,6 +80,7 @@ extern xQueueHandle xUartWayPointQueue;
 extern xQueueHandle xUartParaQueue;
 
 void vUartRecTask(void *pvParameters);
+void vMavlinkTask(void *pvParameters);
 
 #endif
 
