@@ -6,7 +6,7 @@
 xQueueHandle xSenToAhrsQueue;
 
 SensorDataType sdt;
-SensorDataType localSDT={{0,0,0},{0,0,-9.8015},{0}};
+SensorDataType localSDT={{0,0,0},{0,0,-9.8015},{0},0.0};
 
 void vSenAHRSRead(void* pvParameters)
 {

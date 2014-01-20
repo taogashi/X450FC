@@ -14,7 +14,7 @@
 #include "ultraSonic.h"
 
 /***********************macro definition*************************/
-#define GPS_DELAY_CNT 8
+#define GPS_DELAY_CNT 5
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
@@ -149,6 +149,7 @@ void vINSAligTask(void* pvParameters)
 {
 	char printf_buffer[100];
 	u16 string_len;
+	u8 uw_present=0;
 	
 	/*odometry sensor data*/
 	AHRS2INSType a2it;
@@ -173,25 +174,35 @@ void vINSAligTask(void* pvParameters)
 	while(1)	//
 	{		
 		/*receive ins data and fill the IMU_delay_buffer*/
-		xQueueReceive(AHRSToINSQueue,&a2it,portMAX_DELAY);
+		xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);
 		PutToBuffer(&a2it);
 		
-		GetUltraSonicMeasure(&uw_height);
-		
-		if(pdPASS == xQueueReceive(xUartVisionQueue, &vdt, 0))
+		uw_present += GetUltraSonicMeasure(&uw_height);
+		if(vision_validate_cnt++ >= 10)
 		{
-			if(vision_validate_cnt++ >= 3)
-			{
-				vision_validate_cnt = 0;
-				string_len = sprintf(printf_buffer, "%d %d %d\n",vdt.pos_x,vdt.pos_y,vdt.pos_z);
-				UartSend(printf_buffer, string_len);
-			}
+			vision_validate_cnt = 0;
+//			string_len = sprintf(printf_buffer, "%.2f\r\n", a2it.height);
+//			UartSend(printf_buffer, string_len);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", a2it.acc[0],a2it.acc[1],a2it.acc[2]);
+			UartSend(printf_buffer, string_len);
 		}
+//		if(pdPASS == xQueueReceive(xUartVisionQueue, &vdt, 0))
+//		{
+//			if(vision_validate_cnt++ >= 3)
+//			{
+//				vision_validate_cnt = 0;
+//				string_len = sprintf(printf_buffer, "%d %d %d\n",vdt.pos_x,vdt.pos_y,vdt.pos_z);
+//				UartSend(printf_buffer, string_len);
+//			}
+//		}
 	}
 
 	initPos[0] = 0.0;
 	initPos[1] = 0.0;
-	initPos[2] = uw_height;
+	if(uw_present > 10)
+		initPos[2] = uw_height;
+	else
+		initPos[2] = a2it.height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
@@ -274,7 +285,6 @@ void vIEKFProcessTask(void* pvParameters)
 	u8 i;
 	u8 CNT=0;
 	u8 acc_bias_stable = 0;	//indicate whether acc bias is stably estimated
-//	char logData[100]={0};
 	
 	ekf_filter filter;	
 	float dt;

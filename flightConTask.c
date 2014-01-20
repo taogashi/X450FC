@@ -439,20 +439,25 @@ void vFlyConTask(void* pvParameters)
 //						, fbvt.velo_x
 //						, fbvt.velo_y
 //						, fbvt.velo_z);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-									, fbvt.roll_angle*57.3
-									, fbvt.pitch_angle*57.3
-									, fbvt.yaw_angle*57.3
-									, fbvt.roll_rate*57.3
-									, fbvt.pitch_rate*57.3
-									, fbvt.yaw_rate*57.3);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//									, fbvt.roll_angle*57.3
+//									, fbvt.pitch_angle*57.3
+//									, fbvt.yaw_angle*57.3
+//									, fbvt.roll_rate*57.3
+//									, fbvt.pitch_rate*57.3
+//									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, opt.motor1_Out
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-			UartSend(printf_buffer,string_len);
+//			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
+//									, tim4IC1Width
+//									, tim4IC2Width
+//									, tim4IC3Width
+//									, tim4IC4Width);
+//			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}

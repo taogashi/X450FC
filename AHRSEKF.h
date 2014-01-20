@@ -22,6 +22,7 @@ typedef struct
 typedef struct{
 	float q[4];
 	float acc[3];
+	float height;
 	float dt;
 }AHRS2INSType;
 

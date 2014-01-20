@@ -94,13 +94,11 @@ u8 ReadAHRSRaw(SensorDataType* sd)
 
 	s32 CheckSum=0;
 	u8 ret=0;
-	static u32 hit=0;
-	static u32 miss=0;
 
 #ifndef AHRS_SPI_INT_MODE
 	static u8 j=0;
 	u8 bbstatus=0;
-	u8 byteToRead = 26;//sizeof(ComType);
+	u8 byteToRead = 30;//sizeof(ComType);
 	
 	AHRS_SPI_CS_LOW();
 	Delay_us(5);
@@ -136,11 +134,9 @@ u8 ReadAHRSRaw(SensorDataType* sd)
 		for(i=0;i<3;i++) sd->gyr[i]=cmt.data[i]*0.00025;
 		for(i=0;i<3;i++) sd->acc[i]=cmt.data[i+3]*0.001;
 		for(i=0;i<3;i++) sd->mag[i]=cmt.data[i+6];
-		hit++;
+		sd->height = cmt.height;
 		ret = 1;
 	}
-	else
-		miss ++;
 	
 #ifdef AHRS_SPI_INT_MODE
 	frame_captured = 0;

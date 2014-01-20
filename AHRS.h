@@ -14,10 +14,12 @@ typedef struct
 	float gyr[3];
 	float acc[3];
 	s16	  mag[3];
+	float height;
 }SensorDataType;
 
 typedef struct{
 	s16 data[9];
+	float height;
 	s32 Check;
 }ComType;
 
