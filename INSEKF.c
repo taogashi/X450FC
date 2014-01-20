@@ -183,7 +183,7 @@ void vINSAligTask(void* pvParameters)
 			vision_validate_cnt = 0;
 //			string_len = sprintf(printf_buffer, "%.2f\r\n", a2it.height);
 //			UartSend(printf_buffer, string_len);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", a2it.acc[0],a2it.acc[1],a2it.acc[2]);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f\r\n", a2it.acc[0],a2it.acc[1],a2it.acc[2],a2it.height);
 			UartSend(printf_buffer, string_len);
 		}
 //		if(pdPASS == xQueueReceive(xUartVisionQueue, &vdt, 0))
