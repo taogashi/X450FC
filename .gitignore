@@ -1,11 +1,9 @@
 # Mid files
-*.d
-*.crf
 *.dep
-*.bak
-*.yangsheng
 
 # Object files
+*.d
+*.crf
 *.o
 *.ko
 
@@ -23,7 +21,11 @@
 *.exe
 *.out
 *.app
+*.hex
+*~
 
 # Other files
 *.uvgui*.*
-*.txt
+*.axf
+*.lnp
+*.sct
