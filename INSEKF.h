@@ -4,7 +4,7 @@
 #include "OSConfig.h"
 #include "AHRSEKF.h"
 
-#define INS_DEBUG
+//#define INS_DEBUG
 #define GRAVITY 9.8015
 
 typedef struct

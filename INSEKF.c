@@ -42,21 +42,21 @@ const float iP[81]={
 };	//used to initialize EKF filter structure
 
 const float iQ[81]={
-		 0.01,0,0,0,0,0,0,0,0
-	    ,0,0.01,0,0,0,0,0,0,0
-	    ,0,0,0.01,0,0,0,0,0,0
-		,0,0,0,0.25,0,0,0,0,0
-		,0,0,0,0,0.25,0,0,0,0
-		,0,0,0,0,0,0.25,0,0,0
+		 0.0001,0,0,0,0,0,0,0,0
+	    ,0,0.0001,0,0,0,0,0,0,0
+	    ,0,0,0.0001,0,0,0,0,0,0
+		,0,0,0,0.0025,0,0,0,0,0
+		,0,0,0,0,0.0025,0,0,0,0
+		,0,0,0,0,0,0.0025,0,0,0
 		,0,0,0,0,0,0,0.000004096,0,0
 		,0,0,0,0,0,0,0,0.000004096,0
 		,0,0,0,0,0,0,0,0,0.000004096
 };	//used to initialize EKF filter structure
 
 const float iR[9]={
-		 2,0,0
-		,0,2,0
-		,0,0,0.1
+		 20,0,0
+		,0,20,0
+		,0,0,5
 };	//used to initialize EKF filter structure
 
 /*
@@ -149,25 +149,24 @@ void vINSAligTask(void* pvParameters)
 {
 	char printf_buffer[100];
 	u16 string_len;
-	u8 uw_present=0;
+//	u8 uw_present=0;
 	
 	/*odometry sensor data*/
 	AHRS2INSType a2it;
 //	VisionDataType vdt;
 	u16 vision_validate_cnt=0;
 	
-	float uw_height;
-	VisionDataType vdt;
+	float baro_height = 0.0;
+//	VisionDataType vdt;
 	
 	portBASE_TYPE xstatus;
 	
 	/*Enable ultrasonic sensor TIMER*/
-	TIM2_Config();
-	TIM2_IT_Config();
+//	TIM2_Config();
+//	TIM2_IT_Config();
 	
 	/**/
 	xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);	//capture an INS frame	 
-	Blinks(LED1,2);
 
 #ifdef INS_DEBUG	
 	/*GPS data is not needed in debug mode*/
@@ -226,23 +225,18 @@ void vINSAligTask(void* pvParameters)
 #else
 	//normol mode
 	/*GPS data is not needed in debug mode*/
-	while(vision_validate_cnt < 10)	//
+	while(vision_validate_cnt++ < 200)	//
 	{		
 		/*receive ins data and fill the IMU_delay_buffer*/
 		xQueueReceive(AHRSToINSQueue,&a2it,portMAX_DELAY);
 		PutToBuffer(&a2it);
-		
-		GetUltraSonicMeasure(&uw_height);
-		if(xQueueReceive(xUartVisionQueue, &vdt, 0) == pdPASS)
-		{
-			vision_validate_cnt ++;
-		}
+		baro_height = 0.98*baro_height + 0.02*a2it.height;
 	}
 	Quat2dcm(Ctrans, a2it.q);
 
-	initPos[0] = (Ctrans[0]*vdt.pos_x + Ctrans[1]*vdt.pos_y + Ctrans[2]*vdt.pos_z)*0.001;
-	initPos[1] = (Ctrans[3]*vdt.pos_x + Ctrans[4]*vdt.pos_y + Ctrans[5]*vdt.pos_z)*0.001;
-	initPos[2] = uw_height;
+	initPos[0] = 0.0;
+	initPos[1] = 0.0;
+	initPos[2] = baro_height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
@@ -279,8 +273,11 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
-	char printf_buffer[100];
-	u16 string_len;
+//	char printf_buffer[100];
+//	u16 string_len;
+	
+	portTickType lastTick; //control update frequency
+	portTickType curTick;
 	
 	u8 i;
 	u8 CNT=0;
@@ -294,10 +291,7 @@ void vIEKFProcessTask(void* pvParameters)
 	AHRS2INSType cur_a2it;
 	AHRS2INSType k_a2it;
 
-	float uw_height;
-
-	VisionDataType vdt={0.0,0.0,0.0};
-//	portBASE_TYPE xstatus;
+//	VisionDataType vdt={0.0,0.0,0.0};
 	
 	PosDataType pdt;	//position message send to flight control task
 
@@ -306,11 +300,10 @@ void vIEKFProcessTask(void* pvParameters)
 	memcpy(filter->x,x,filter->state_dim*sizeof(float));
 	memcpy(filter->P,iP,filter->state_dim*filter->state_dim*sizeof(float));
 
-	GetUltraSonicMeasure(&uw_height);
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&cur_a2it,portMAX_DELAY);
-	Blinks(LED1,4);
 	
+	lastTick = xTaskGetTickCount();
 	for(;;)
 	{
 		/*capture an INS frame*/
@@ -338,13 +331,13 @@ void vIEKFProcessTask(void* pvParameters)
 					, NULL);
 			
 //		xstatus=xQueueReceive(xUartVisionQueue,&vdt,0);	//get measurement data
-		GetUltraSonicMeasure(&uw_height);
-		if(xQueueReceive(xUartVisionQueue,&vdt,0) == pdPASS)
+		curTick = xTaskGetTickCount();
+		if(curTick - lastTick >= 100)
 		{
 			float meas_Err[3]={0.0};
-			measure[0] = (Ctrans[0]*vdt.pos_x + Ctrans[1]*vdt.pos_y + Ctrans[2]*vdt.pos_z)*0.001-initPos[0];
-			measure[1] = (Ctrans[3]*vdt.pos_x + Ctrans[4]*vdt.pos_y + Ctrans[5]*vdt.pos_z)*0.001-initPos[1];
-			measure[2] = uw_height-initPos[2];
+			measure[0] = 0.0;
+			measure[1] = 0.0;
+			measure[2] = cur_a2it.height;
 			
 			for(i=0;i<3;i++)
 			{
@@ -373,7 +366,7 @@ void vIEKFProcessTask(void* pvParameters)
 						, NULL
 						, (void *)(filter->x)
 						, NULL);	
-			if(CNT++ >= 4)
+			if(CNT++ >= 8)
 			{
 				CNT = 0;
 //				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
@@ -381,11 +374,11 @@ void vIEKFProcessTask(void* pvParameters)
 //							,navParamK[0],navParamK[1],navParamK[2]
 //							,navParamK[3],navParamK[4],navParamK[5]
 //							,navParamK[6],navParamK[7],navParamK[8]);
-				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-						,vdt.pos_x*0.001,vdt.pos_y*0.001,uw_height
-						,navParamK[0],navParamK[1],navParamK[2]
-						,navParamK[3],navParamK[4],navParamK[5]);
-				UartSend(printf_buffer, string_len);
+//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//						,measure[2]
+//						,navParamK[0],navParamK[1],navParamK[2]
+//						,navParamK[3],navParamK[4],navParamK[5]);
+//				UartSend(printf_buffer, string_len);
 			}
 			/*
 			 *correct navParamCur
@@ -449,7 +442,7 @@ void vIEKFProcessTask(void* pvParameters)
 					
 					INS_Update(navParamCur,&cur_a2it);
 				}
-				Blinks(LED1,1);
+//				Blinks(LED1,1);
 			}
 		}
 		else
@@ -475,7 +468,7 @@ void INS_GetA(float *A,void *para1,void *para2,void *para3)
 	memset(A,0,324);
 
 	A[0]=1.0;	A[10]=1.0;	A[20]=1.0;	A[30]=1.0;	A[40]=1.0;	
-	A[50]=1.0;	A[60]=1.0;	A[70]=1.0;	A[80]=1.0;
+	A[50]=1.0;	A[60]=0.998;	A[70]=0.998;	A[80]=1.0;
 
 	A[3]=dt;A[13]=dt;A[23]=-dt;
 	
