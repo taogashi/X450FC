@@ -176,7 +176,7 @@ void vINSAligTask(void* pvParameters)
 		xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);
 		PutToBuffer(&a2it);
 		
-		uw_present += GetUltraSonicMeasure(&uw_height);
+//		uw_present += GetUltraSonicMeasure(&uw_height);
 		if(vision_validate_cnt++ >= 10)
 		{
 			vision_validate_cnt = 0;
@@ -198,10 +198,10 @@ void vINSAligTask(void* pvParameters)
 
 	initPos[0] = 0.0;
 	initPos[1] = 0.0;
-	if(uw_present > 10)
-		initPos[2] = uw_height;
-	else
-		initPos[2] = a2it.height;
+//	if(uw_present > 10)
+//		initPos[2] = uw_height;
+//	else
+//		initPos[2] = a2it.height;
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
