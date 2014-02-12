@@ -294,10 +294,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>22</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>54</TopLine>
-      <CurrentLine>60</CurrentLine>
+      <TopLine>69</TopLine>
+      <CurrentLine>95</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\main.c</PathWithFileName>
       <FilenameWithoutPath>main.c</FilenameWithoutPath>
@@ -390,10 +390,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>10</ColumnNumber>
+      <ColumnNumber>26</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>132</TopLine>
+      <CurrentLine>92</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\AHRSEKF.c</PathWithFileName>
       <FilenameWithoutPath>AHRSEKF.c</FilenameWithoutPath>
@@ -424,8 +424,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>41</TopLine>
-      <CurrentLine>48</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\uartTask.c</PathWithFileName>
       <FilenameWithoutPath>uartTask.c</FilenameWithoutPath>
@@ -470,10 +470,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>2</ColumnNumber>
+      <ColumnNumber>4</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>266</TopLine>
-      <CurrentLine>272</CurrentLine>
+      <TopLine>335</TopLine>
+      <CurrentLine>275</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\INSEKF.c</PathWithFileName>
       <FilenameWithoutPath>INSEKF.c</FilenameWithoutPath>
@@ -486,10 +486,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>16</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>288</TopLine>
-      <CurrentLine>387</CurrentLine>
+      <TopLine>178</TopLine>
+      <CurrentLine>228</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\flightConTask.c</PathWithFileName>
       <FilenameWithoutPath>flightConTask.c</FilenameWithoutPath>
@@ -784,8 +784,8 @@
       <Focus>0</Focus>
       <ColumnNumber>1</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1981</TopLine>
-      <CurrentLine>1988</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\Source\tasks.c</PathWithFileName>
       <FilenameWithoutPath>tasks.c</FilenameWithoutPath>
