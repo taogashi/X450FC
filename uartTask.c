@@ -149,6 +149,7 @@ void vUartRecTask(void* pvParameters)
 		{
 			memcpy(buffer,uart2Cache2,100);
 			uart2Flag=0;
+			/******************* checking pos data **********************/
 			if((keyword=strstr(buffer, "POS")) != NULL)
 			{
 				sscanf(keyword,"POS,%hd,%hd,%hd,%hd"
@@ -257,17 +258,14 @@ void vUartRecTask(void* pvParameters)
 			/********************  checking Neutral param *************************/
 			else if((keyword=strstr(buffer,"Neutral")) != NULL)
 			{
+				s16 temp_neutral[4];
 				index = 5;
 				sscanf(keyword,NEUTRAL_FORMAT_IN
-						,&(optional_param_global.RCneutral[0])
-						,&(optional_param_global.RCneutral[1])
-						,&(optional_param_global.RCneutral[2])
-						,&(optional_param_global.RCneutral[3]));
+						,&(temp_neutral[0]),&(temp_neutral[1])
+						,&(temp_neutral[2]),&(temp_neutral[3]));
 				string_len = sprintf(buffer, NEUTRAL_FORMAT_OUT
-						,(optional_param_global.RCneutral[0])
-						,(optional_param_global.RCneutral[1])
-						,(optional_param_global.RCneutral[2])
-						,(optional_param_global.RCneutral[3]));
+						,(temp_neutral[0]),(temp_neutral[1])
+						,(temp_neutral[2]),(temp_neutral[3]));
 				UartSend(buffer,string_len);
 				curTime = lastTime = xTaskGetTickCount();
 				while(uart2Flag==0 && curTime-lastTime<20000)
@@ -281,6 +279,7 @@ void vUartRecTask(void* pvParameters)
 					uart2Flag=0;
 					if((keyword=strstr(buffer,"OK")) != NULL)
 					{
+						memcpy(optional_param_global.RCneutral, temp_neutral, 4*sizeof(s16));
 						string_len = sprintf(buffer, "OK!\r\n");
 						UartSend(buffer, string_len);
 						xQueueSend(xUartParaQueue, &index, portMAX_DELAY);

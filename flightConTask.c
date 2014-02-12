@@ -835,15 +835,15 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 
 void WriteMotor(OutputType* opt)
 {
-	TIM_SetCompare1(TIM3,opt->motor1_Out);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,opt->motor2_Out);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,opt->motor3_Out);	//youmenOut	  
-	TIM_SetCompare4(TIM3,opt->motor4_Out);	//youmenOut	
+//	TIM_SetCompare1(TIM3,opt->motor1_Out);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,opt->motor2_Out);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,opt->motor3_Out);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,opt->motor4_Out);	//youmenOut	
 
-//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-//	TIM_SetCompare4(TIM3,100);	//youmenOut	
+	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/
