@@ -207,29 +207,20 @@ void vUartRecTask(void* pvParameters)
 			/********************  checking Miscel param *************************/
 			else if((keyword=strstr(buffer,"Miscel")) != NULL)
 			{
+				float temp_miscel[10];
 				index = 4;
 				sscanf(keyword,MISCEL_FORMAT_IN
-						,&(optional_param_global.miscel[0])
-						,&(optional_param_global.miscel[1])
-						,&(optional_param_global.miscel[2])
-						,&(optional_param_global.miscel[3])
-						,&(optional_param_global.miscel[4])
-						,&(optional_param_global.miscel[5])
-						,&(optional_param_global.miscel[6])
-						,&(optional_param_global.miscel[7])
-						,&(optional_param_global.miscel[8])
-						,&(optional_param_global.miscel[9]));
+						,&(temp_miscel[0]),&(temp_miscel[1])
+						,&(temp_miscel[2]),&(temp_miscel[3])
+						,&(temp_miscel[4]),&(temp_miscel[5])
+						,&(temp_miscel[6]),&(temp_miscel[7])
+						,&(temp_miscel[8]),&(temp_miscel[9]));
 				string_len = sprintf(buffer, MISCEL_FORMAT_OUT
-						,optional_param_global.miscel[0]
-						,optional_param_global.miscel[1]
-						,optional_param_global.miscel[2]
-						,optional_param_global.miscel[3]
-						,optional_param_global.miscel[4]
-						,optional_param_global.miscel[5]
-						,optional_param_global.miscel[6]
-						,optional_param_global.miscel[7]
-						,optional_param_global.miscel[8]
-						,optional_param_global.miscel[9]);
+						,temp_miscel[0],temp_miscel[1]
+						,temp_miscel[2],temp_miscel[3]
+						,temp_miscel[4],temp_miscel[5]
+						,temp_miscel[6],temp_miscel[7]
+						,temp_miscel[8],temp_miscel[9]);
 				UartSend(buffer,string_len);
 				curTime = lastTime = xTaskGetTickCount();
 				while(uart2Flag==0 && curTime-lastTime<20000)
@@ -243,6 +234,7 @@ void vUartRecTask(void* pvParameters)
 					uart2Flag=0;
 					if((keyword=strstr(buffer,"OK")) != NULL)
 					{
+						memcpy(optional_param_global.miscel, temp_miscel, 10*sizeof(float));
 						string_len = sprintf(buffer, "OK!\r\n");
 						UartSend(buffer, string_len);
 						xQueueSend(xUartParaQueue, &index, portMAX_DELAY);

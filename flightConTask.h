@@ -6,18 +6,22 @@
 #define POS_X_VALID		0x01
 #define POS_Y_VALID		0x02
 #define POS_Z_VALID		0x04
+#define POS_ALL_VALID	0x07
 
 #define VELO_X_VALID		0x01
 #define VELO_Y_VALID		0x02
 #define VELO_Z_VALID		0x04
+#define VELO_ALL_VALID		0x07
 
 #define ROLL_ANGLE_VALID 	0x01
 #define PITCH_ANGLE_VALID 	0x02
 #define YAW_ANGLE_VALID		0x04
+#define ANGLE_ALL_VALID		0x07
 
 #define ROLL_RATE_VALID		0x01
 #define PITCH_RATE_VALID	0x02
 #define YAW_RATE_VALID		0x04
+#define RATE_ALL_VALID		0x07
 
 extern const char* PID_FORMAT_IN;
 extern const char* PID_FORMAT_OUT;
@@ -100,11 +104,23 @@ typedef struct{
 	float integ;
 	float i_limit;
 	float d_limit;
+	float out_limit;
+	
 	float kp;
 	float kd;
 	float ki;
 	float output;
 }PIDCtrlerType;
+
+typedef struct{
+	float in;
+	float fb;
+	float dt;
+	u8 use_ref_diff;
+	float ref_diff;
+	void *deriv_filter;
+	void *err_filter;
+}PIDCtrlerAuxiliaryType;
 
 typedef struct{
 	u8 properties;	//0:normal
@@ -114,10 +130,10 @@ typedef struct{
 	u8 maxSpeed;	//
 	u16 time;	//0.1s/count
 	u16 posAcrcy;	//in mm
+	u16 yaw;	//1/4000 rad
 	int x;		//mm
 	int y;		//mm
 	int height;	//mm
-	int yaw;	//deg
 }WayPointType;
 
 extern OptionalPara optional_param_global;
