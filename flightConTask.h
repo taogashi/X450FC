@@ -3,6 +3,8 @@
 
 #include "stm32f4xx.h"
 
+#define ANGLE_LOOP_DIVIDER 3
+
 #define POS_X_VALID		0x01
 #define POS_Y_VALID		0x02
 #define POS_Z_VALID		0x04
