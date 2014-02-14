@@ -171,6 +171,7 @@ void vFlyConTask(void* pvParameters)
 		fbvt.pitch_angle = adt.pitchAngle;
 		fbvt.yaw_angle = adt.yawAngle;
 		fbvt.angle_valid = ROLL_ANGLE_VALID | PITCH_ANGLE_VALID | YAW_ANGLE_VALID;
+//		fbvt.angle_valid = 0;
 		
 		fbvt.roll_rate = adt.rollAngleRate;
 		fbvt.pitch_rate = adt.pitchAngleRate;
@@ -412,10 +413,10 @@ void vFlyConTask(void* pvParameters)
 		/************* drive motor ***********************/
 		if(odt.thrustOrder < 0.05)
 		{
-			opt.motor1_Out = 100;
-			opt.motor2_Out = 100;
-			opt.motor3_Out = 100;
-			opt.motor4_Out = 100;
+			opt.motor1_Out = 0.0;
+			opt.motor2_Out = 0.0;
+			opt.motor3_Out = 0.0;
+			opt.motor4_Out = 0.0;
 		}
 		WriteMotor(&opt);
 
@@ -803,26 +804,26 @@ void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
 void OutputControl(CtrlProcType *cpt, OutputType* opt)
 {
 	/*restrict output thrust to guarrentee angle PID allowance*/
-	if(cpt->thrust_out>0.0 && cpt->thrust_out < 0.23)
+	if(cpt->thrust_out>0.0 && cpt->thrust_out < 0.17)
 	{
 		opt->motor1_Out = cpt->thrust_out;
 		opt->motor2_Out = cpt->thrust_out;
 		opt->motor3_Out = cpt->thrust_out;
 		opt->motor4_Out = cpt->thrust_out;
 	}
-	else if(cpt->thrust_out >= 0.23 && cpt->thrust_out < 0.77)
+	else if(cpt->thrust_out >= 0.17 && cpt->thrust_out < 0.80)
 	{
 		opt->motor1_Out = cpt->thrust_out + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
 		opt->motor2_Out = cpt->thrust_out + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
 		opt->motor3_Out = cpt->thrust_out - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
 		opt->motor4_Out = cpt->thrust_out - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
 	}
-	else if(cpt->thrust_out >= 0.77)
+	else if(cpt->thrust_out >= 0.80)
 	{
-		opt->motor1_Out = 0.77 + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
-		opt->motor2_Out = 0.77 + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
-		opt->motor3_Out = 0.77 - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
-		opt->motor4_Out = 0.77 - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+		opt->motor1_Out = 0.80 + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor2_Out = 0.80 + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+		opt->motor3_Out = 0.80 - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor4_Out = 0.80 - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
 	}
 	
 //	opt->motor1_Out = youmenOut + cpt->pitch_moment - cpt->yaw_moment;
@@ -862,30 +863,30 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 /* this function are platform relevant*/
 void WriteMotor(OutputType* opt)
 {
-//	if(opt->motor1_Out < 0.01)
-//		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
-//		
-//	if(opt->motor2_Out < 0.01)
-//		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
-//		
-//	if(opt->motor3_Out < 0.01)
-//		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
-//		
-//	if(opt->motor4_Out < 0.01)
-//		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
+	if(opt->motor1_Out < 0.01)
+		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+		
+	if(opt->motor2_Out < 0.01)
+		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+		
+	if(opt->motor3_Out < 0.01)
+		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+		
+	if(opt->motor4_Out < 0.01)
+		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
 
-	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-	TIM_SetCompare4(TIM3,100);	//youmenOut	
+//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/
