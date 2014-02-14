@@ -171,6 +171,7 @@ void vFlyConTask(void* pvParameters)
 		fbvt.pitch_angle = adt.pitchAngle;
 		fbvt.yaw_angle = adt.yawAngle;
 		fbvt.angle_valid = ROLL_ANGLE_VALID | PITCH_ANGLE_VALID | YAW_ANGLE_VALID;
+//		fbvt.angle_valid = 0;
 		
 		fbvt.roll_rate = adt.rollAngleRate;
 		fbvt.pitch_rate = adt.pitchAngleRate;
@@ -412,10 +413,10 @@ void vFlyConTask(void* pvParameters)
 		/************* drive motor ***********************/
 		if(odt.thrustOrder < 0.05)
 		{
-			opt.motor1_Out = 100;
-			opt.motor2_Out = 100;
-			opt.motor3_Out = 100;
-			opt.motor4_Out = 100;
+			opt.motor1_Out = 0.0;
+			opt.motor2_Out = 0.0;
+			opt.motor3_Out = 0.0;
+			opt.motor4_Out = 0.0;
 		}
 		WriteMotor(&opt);
 
@@ -457,7 +458,7 @@ void vFlyConTask(void* pvParameters)
 //									, fbvt.pitch_rate*57.3
 //									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
-			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
 									, opt.motor1_Out
 									, opt.motor2_Out
 									, opt.motor3_Out
@@ -802,58 +803,90 @@ void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
 
 void OutputControl(CtrlProcType *cpt, OutputType* opt)
 {
-	s16 youmenOut=200+(s16)(cpt->thrust_out*800);
-	
-	opt->motor1_Out = youmenOut + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor2_Out = youmenOut + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
-	opt->motor3_Out = youmenOut - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
-	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+	/*restrict output thrust to guarrentee angle PID allowance*/
+	if(cpt->thrust_out>0.0 && cpt->thrust_out < 0.17)
+	{
+		opt->motor1_Out = cpt->thrust_out;
+		opt->motor2_Out = cpt->thrust_out;
+		opt->motor3_Out = cpt->thrust_out;
+		opt->motor4_Out = cpt->thrust_out;
+	}
+	else if(cpt->thrust_out >= 0.17 && cpt->thrust_out < 0.80)
+	{
+		opt->motor1_Out = cpt->thrust_out + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor2_Out = cpt->thrust_out + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+		opt->motor3_Out = cpt->thrust_out - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor4_Out = cpt->thrust_out - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+	}
+	else if(cpt->thrust_out >= 0.80)
+	{
+		opt->motor1_Out = 0.80 + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor2_Out = 0.80 + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+		opt->motor3_Out = 0.80 - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor4_Out = 0.80 - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+	}
 	
 //	opt->motor1_Out = youmenOut + cpt->pitch_moment - cpt->yaw_moment;
 //	opt->motor2_Out = youmenOut + cpt->roll_moment  + cpt->yaw_moment;
 //	opt->motor3_Out = youmenOut - cpt->pitch_moment - cpt->yaw_moment;
 //	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->yaw_moment;
 
-	if(opt->motor1_Out<230) 
-		opt->motor1_Out=100;
-	else if(opt->motor1_Out>1100) 
-		opt->motor1_Out=1100; 
-
-	if(opt->motor2_Out<230) 
-		opt->motor2_Out=100;
-	else if(opt->motor2_Out>1100) 
-		opt->motor2_Out=1100;
-
-	if(opt->motor3_Out<230) 
-		opt->motor3_Out=100;
-	else if(opt->motor3_Out>1100) 
-		opt->motor3_Out=1100;
-
-	if(opt->motor4_Out<230) 
-		opt->motor4_Out=100;
-	else if(opt->motor4_Out>1100) 
-		opt->motor4_Out=1100;
+	if(opt->motor1_Out<0.1) 
+		opt->motor1_Out=0.1;
+	else if(opt->motor1_Out>0.95) 
+		opt->motor1_Out=0.95; 
+		
+	if(opt->motor2_Out<0.1) 
+		opt->motor2_Out=0.1;
+	else if(opt->motor2_Out>0.95) 
+		opt->motor2_Out=0.95; 
+		
+	if(opt->motor3_Out<0.1) 
+		opt->motor3_Out=0.1;
+	else if(opt->motor3_Out>0.95) 
+		opt->motor3_Out=0.95; 
+		
+	if(opt->motor4_Out<0.1) 
+		opt->motor4_Out=0.1;
+	else if(opt->motor4_Out>0.95) 
+		opt->motor4_Out=0.95; 
 	
 	if(cpt->thrust_out<0.05)
 	{
-		opt->motor1_Out = 100;
-		opt->motor2_Out = 100;
-		opt->motor3_Out = 100;
-		opt->motor4_Out = 100;
+		opt->motor1_Out = 0.0;
+		opt->motor2_Out = 0.0;
+		opt->motor3_Out = 0.0;
+		opt->motor4_Out = 0.0;
 	}
 }
 
+/* this function are platform relevant*/
 void WriteMotor(OutputType* opt)
 {
-//	TIM_SetCompare1(TIM3,opt->motor1_Out);	//youmenOut 	 
-//	TIM_SetCompare2(TIM3,opt->motor2_Out);	//youmenOut 	  
-//	TIM_SetCompare3(TIM3,opt->motor3_Out);	//youmenOut	  
-//	TIM_SetCompare4(TIM3,opt->motor4_Out);	//youmenOut	
+	if(opt->motor1_Out < 0.01)
+		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+		
+	if(opt->motor2_Out < 0.01)
+		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+		
+	if(opt->motor3_Out < 0.01)
+		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+		
+	if(opt->motor4_Out < 0.01)
+		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
 
-	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-	TIM_SetCompare4(TIM3,100);	//youmenOut	
+//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/
