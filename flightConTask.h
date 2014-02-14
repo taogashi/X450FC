@@ -82,6 +82,7 @@ typedef struct{
 	u8 lock_en;
 }OrderType;
 
+//0.0~1.0
 typedef struct{
 	float roll_moment;
 	float pitch_moment;
@@ -91,10 +92,10 @@ typedef struct{
 
 //struct for output command
 typedef struct{
-	s16 motor1_Out;
-	s16 motor2_Out;	
-	s16 motor3_Out;	
-	s16 motor4_Out;	
+	float motor1_Out;
+	float motor2_Out;	
+	float motor3_Out;	
+	float motor4_Out;	
 }OutputType;
 
 typedef struct{
