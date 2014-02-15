@@ -7,25 +7,25 @@
 #define VELO_LOOP_DIVIDER	8
 #define ANGLE_LOOP_DIVIDER 	4
 
-#define POS_X_VALID		0x01
-#define POS_Y_VALID		0x02
-#define POS_Z_VALID		0x04
-#define POS_ALL_VALID	0x07
+#define POS_X_VALID		(u8)0x01
+#define POS_Y_VALID		(u8)0x02
+#define POS_Z_VALID		(u8)0x04
+#define POS_ALL_VALID	(u8)0x07
 
-#define VELO_X_VALID		0x01
-#define VELO_Y_VALID		0x02
-#define VELO_Z_VALID		0x04
-#define VELO_ALL_VALID		0x07
+#define VELO_X_VALID		(u8)0x01
+#define VELO_Y_VALID		(u8)0x02
+#define VELO_Z_VALID		(u8)0x04
+#define VELO_ALL_VALID		(u8)0x07
 
-#define ROLL_ANGLE_VALID 	0x01
-#define PITCH_ANGLE_VALID 	0x02
-#define YAW_ANGLE_VALID		0x04
-#define ANGLE_ALL_VALID		0x07
+#define ROLL_ANGLE_VALID 	(u8)0x01
+#define PITCH_ANGLE_VALID 	(u8)0x02
+#define YAW_ANGLE_VALID		(u8)0x04
+#define ANGLE_ALL_VALID		(u8)0x07
 
-#define ROLL_RATE_VALID		0x01
-#define PITCH_RATE_VALID	0x02
-#define YAW_RATE_VALID		0x04
-#define RATE_ALL_VALID		0x07
+#define ROLL_RATE_VALID		(u8)0x01
+#define PITCH_RATE_VALID	(u8)0x02
+#define YAW_RATE_VALID		(u8)0x04
+#define RATE_ALL_VALID		(u8)0x07
 
 extern const char* PID_FORMAT_IN;
 extern const char* PID_FORMAT_OUT;

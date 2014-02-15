@@ -65,6 +65,8 @@ void WriteMotor(OutputType* opt);
 void WaitRCSignal(void);
 
 void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBASE_TYPE pos_data_valid);
+
+void PosZLoop(FeedBackValType *fbvt
 void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct system_level_ctrler *system_ctrler, float dt);
 void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt);
 
@@ -75,7 +77,9 @@ void vFlyConTask(void* pvParameters)
 	u16 string_len;
 	u8 CNT=0;
 	
-	u8 angle_loop_cnt=0;
+	u8 pos_loop_cnt = 0;
+	u8 velo_loop_cnt = 0;
+	u8 angle_loop_cnt = 0;
 	
 	//for queue receive
 	portBASE_TYPE xstatus;
@@ -201,6 +205,7 @@ void vFlyConTask(void* pvParameters)
 			ResetCtrler(&(system_ctrler.py_ctrler));
 		}
 
+		/* odt.thrust_out */
 		if((fbvt.pos_valid & POS_Z_VALID)!=0 && (fbvt.velo_valid & VELO_Z_VALID)!=0)
 		{
 			if(odt.hover_en == 1)
@@ -325,6 +330,52 @@ void vFlyConTask(void* pvParameters)
 				wpt.height = fbvt.pos_z*1000;
 			}
 			cpt.thrust_out = odt.thrustOrder;
+		}
+		
+		/****************** position loop **********************/
+		if(pos_loop_cnt++ >= POS_LOOP_DIVIDER)
+		{
+			if((fbvt.pos_valid & POS_X_VALID)!=0 && (fbvt.pos_valid & POS_Y_VALID)!=0)
+			{
+				/*position control*/
+				pos_loop_cnt = 0;
+				fbvt.pos_valid &= (~POS_X_VALID);
+				fbvt.pos_valid &= (~POS_Y_VALID);
+			}
+			
+			if((fbvt.pos_valid & POS_Z_VALID)!=0)
+			{
+				/* height control */
+				msg2ctrler.in = wpt.height;
+				msg2ctrler.fb = fbvt.pos_z;
+				msg2ctrler.dt = 0.03;
+				msg2ctrler.use_ref_diff = 0;
+				msg2ctrler.deriv_filter = NULL;
+				msg2ctrler.err_filter = NULL;
+				
+				PIDProccessing(&(system_ctrler.height_ctrler), &msg2ctrler);
+				
+				pos_loop_cnt = 0;
+				fbvt.pos_valid &= (~POS_Z_VALID);
+			}
+		}
+		
+		/****************** velocity loop *********************/
+		if(velo_loop_cnt++ >= VELO_LOOP_DIVIDER)
+		{
+			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
+			{
+				/* velocity control*/
+				velo_loop_cnt = 0;
+				fbvt.velo_valid &= (~VELO_X_VALID);
+				fbvt.velo_valid &= (~VELO_Y_VALID);
+			}
+			
+			if((fbvt.velo_valid & VELO_Z_VALID)!=0)
+			{
+				velo_loop_cnt = 0;
+				fbvt.velo_valid &= (~VELO_Z_VALID);
+			}
 		}
 		
 		/****************** angle loop ************************/
@@ -877,11 +928,6 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBA
 		
 		Blinks(LED1,1);
 	}
-	else
-	{
-		fbvt->pos_valid = 0;
-		fbvt->velo_valid = 0;
-	}	
 	
 	fbvt->roll_angle = adt->rollAngle;
 	fbvt->pitch_angle = adt->pitchAngle;
