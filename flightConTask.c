@@ -101,7 +101,7 @@ void vFlyConTask(void* pvParameters)
 	OrderType odt;
 
 	//final thrust output to each motor
-	OutputType opt={100,100,100,100};
+	OutputType opt={0.0,0.0,0.0,0.0};
 
 	portTickType lastTime;
 
@@ -450,19 +450,19 @@ void vFlyConTask(void* pvParameters)
 //						, fbvt.velo_x
 //						, fbvt.velo_y
 //						, fbvt.velo_z);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//									, fbvt.roll_angle*57.3
-//									, fbvt.pitch_angle*57.3
-//									, fbvt.yaw_angle*57.3
-//									, fbvt.roll_rate*57.3
-//									, fbvt.pitch_rate*57.3
-//									, fbvt.yaw_rate*57.3);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+									, fbvt.roll_angle*57.3
+									, fbvt.pitch_angle*57.3
+									, fbvt.yaw_angle*57.3
+									, fbvt.roll_rate*57.3
+									, fbvt.pitch_rate*57.3
+									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-									, opt.motor1_Out
-									, opt.motor2_Out
-									, opt.motor3_Out
-									, opt.motor4_Out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+//									, opt.motor1_Out
+//									, opt.motor2_Out
+//									, opt.motor3_Out
+//									, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
@@ -560,8 +560,8 @@ void InputControl(OrderType* odt)
 {
 	odt->thrustOrder = (tim4IC3Width-optional_param_global.RCneutral[2])*0.00125;	//کһۯ
 	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//֛̣ԉއ̙׈ָ®	 خճ30£/s
-	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//֛̣ԉއ׈ָ®	 خճ30£
-	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//֛̣ԉއ׈ָ® خճ30£
+	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0015;	//֛̣ԉއ׈ָ®	 خճ30£
+	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.0015;	//֛̣ԉއ׈ָ® خճ30£
 	
 	//vertical
 	if(tim5IC2Width > 1500)
@@ -892,6 +892,9 @@ void WriteMotor(OutputType* opt)
 /* roll the roll-stick rightmost to leftmost to start*/
 void WaitRCSignal(void)
 {
+	float neutral[4]={0.0};
+	u16 i=0;
+	
 	while(tim4IC1Width<1800)
 	{
 		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
@@ -908,4 +911,18 @@ void WaitRCSignal(void)
 	{
 		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
 	}
+	
+	for(i=0; i<50; i++)
+	{
+		neutral[0] += tim4IC1Width;
+		neutral[1] += tim4IC2Width;
+		neutral[2] += tim4IC3Width;
+		neutral[3] += tim4IC4Width;
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
+	
+	optional_param_global.RCneutral[0] = (s16)(neutral[0]/50);
+	optional_param_global.RCneutral[1] = (s16)(neutral[1]/50);
+	optional_param_global.RCneutral[2] = (s16)(neutral[2]/50);
+	optional_param_global.RCneutral[3] = (s16)(neutral[3]/50);
 }
