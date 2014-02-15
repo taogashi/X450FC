@@ -64,7 +64,9 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt);
 void WriteMotor(OutputType* opt);
 void WaitRCSignal(void);
 
+void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBASE_TYPE pos_data_valid);
 void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct system_level_ctrler *system_ctrler, float dt);
+void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt);
 
 void vFlyConTask(void* pvParameters)
 {
@@ -72,6 +74,7 @@ void vFlyConTask(void* pvParameters)
 	char printf_buffer[100];
 	u16 string_len;
 	u8 CNT=0;
+	
 	u8 angle_loop_cnt=0;
 	
 	//for queue receive
@@ -101,16 +104,20 @@ void vFlyConTask(void* pvParameters)
 	
 	//orders from remote controller
 	OrderType odt;
+	
+	float yaw_locked;
 
 	//final thrust output to each motor
-	OutputType opt={100,100,100,100};
+	OutputType opt={0.0,0.0,0.0,0.0};
 
 	portTickType lastTime;
 
 	Blinks(LED1,4);
 	/******************* initialize *************************************/
 	xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
-	wpt.yaw = adt.yawAngle*4000;
+	
+	yaw_locked = adt.yawAngle;
+	
 	optional_param_global.RCneutral[0] = 1500;
 	optional_param_global.RCneutral[1] = 1500;
 	optional_param_global.RCneutral[2] = 1100;
@@ -149,36 +156,7 @@ void vFlyConTask(void* pvParameters)
 		xstatus = xQueueReceive(INSToFlightConQueue, &pdt, 0);
 		
 		/************* feed back *************************/
-		if(xstatus == pdPASS)
-		{
-			fbvt.pos_x = pdt.posX;
-			fbvt.pos_y = pdt.posY;
-			fbvt.pos_z = pdt.posZ;
-			fbvt.pos_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
-			
-			fbvt.velo_x = pdt.veloX;
-			fbvt.velo_y = pdt.veloY;
-			fbvt.velo_z = pdt.veloZ;
-			fbvt.velo_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
-			
-			Blinks(LED1,1);
-		}
-		else
-		{
-			fbvt.pos_valid = 0;
-			fbvt.velo_valid = 0;
-		}	
-		
-		fbvt.roll_angle = adt.rollAngle;
-		fbvt.pitch_angle = adt.pitchAngle;
-		fbvt.yaw_angle = adt.yawAngle;
-		fbvt.angle_valid = ROLL_ANGLE_VALID | PITCH_ANGLE_VALID | YAW_ANGLE_VALID;
-//		fbvt.angle_valid = 0;
-		
-		fbvt.roll_rate = adt.rollAngleRate;
-		fbvt.pitch_rate = adt.pitchAngleRate;
-		fbvt.yaw_rate = adt.yawAngleRate;
-		fbvt.rate_valid = ROLL_RATE_VALID | PITCH_RATE_VALID | YAW_RATE_VALID;
+		FeedBack(&fbvt, &adt, &pdt, xstatus);
 
 		/************* input *************************/
 		InputControl(&odt);
@@ -204,6 +182,28 @@ void vFlyConTask(void* pvParameters)
 			perform p2p control;
 		}
 		*/
+		if((fbvt.pos_valid & POS_X_VALID)!=0 && (fbvt.pos_valid & POS_Y_VALID)!=0)
+		{
+			if(odt.lock_en == 1)
+			{
+				/*follow position control routing here*/
+			}
+			else
+			{
+				wpt.x = (int)(fbvt.pos_x*1000);
+				wpt.y = (int)(fbvt.pos_y*1000);
+				wpt.height = (int)(fbvt.pos_z*1000);
+				wpt.yaw = (u16)(fbvt.yaw_angle*4000);
+			}
+		}
+		else
+		{
+			ResetCtrler(&(system_ctrler.px_ctrler));
+			ResetCtrler(&(system_ctrler.py_ctrler));
+		}
+		
+		
+		
 		/*horizental loop*/
 		if(odt.lock_en == 1)
 		{
@@ -313,58 +313,11 @@ void vFlyConTask(void* pvParameters)
 		if(angle_loop_cnt++ >= ANGLE_LOOP_DIVIDER)
 		{
 			angle_loop_cnt = 0;
-			
-
+			AngleLoop(&fbvt, &odt, &yaw_locked, &system_ctrler, 0.005);
 		}
 		
 		/************************* rate loop ***********************/
-		/********** roll ***********/
-		if((fbvt.rate_valid & ROLL_RATE_VALID) != 0)
-		{
-			msg2ctrler.in = system_ctrler.roll_ctrler.output;
-			msg2ctrler.fb = fbvt.roll_rate;
-			msg2ctrler.dt = 0.005;
-			msg2ctrler.deriv_filter = (void *)&droll_rate_lpf;
-			msg2ctrler.err_filter = (void *)&roll_rate_lpf;
-			msg2ctrler.use_ref_diff = 0;
-			
-			PIDProccessing(&(system_ctrler.rollrate_ctrler), &msg2ctrler);
-		}
-		else
-		{
-			ResetCtrler(&system_ctrler.rollrate_ctrler);
-		}
-		/********** pitch ***********/
-		if((fbvt.rate_valid & PITCH_RATE_VALID) != 0)
-		{
-			msg2ctrler.in = system_ctrler.pitch_ctrler.output;
-			msg2ctrler.fb = fbvt.pitch_rate;
-			msg2ctrler.dt = 0.005;
-			msg2ctrler.deriv_filter = (void *)&dpitch_rate_lpf;
-			msg2ctrler.err_filter = (void *)&pitch_rate_lpf;
-			msg2ctrler.use_ref_diff = 0;
-			
-			PIDProccessing(&(system_ctrler.pitchrate_ctrler), &msg2ctrler);
-		}
-		else
-		{
-			ResetCtrler(&system_ctrler.pitchrate_ctrler);
-		}
-		/********** yaw ***********/
-		if((fbvt.rate_valid & YAW_RATE_VALID) != 0)
-		{	
-			msg2ctrler.in = system_ctrler.yaw_ctrler.output;
-			msg2ctrler.fb = fbvt.yaw_rate;
-			msg2ctrler.dt = 0.005;
-			msg2ctrler.deriv_filter = (void *)&dyaw_rate_lpf;
-			msg2ctrler.err_filter = (void *)&yaw_rate_lpf;
-			msg2ctrler.use_ref_diff = 0;
-			PIDProccessing(&(system_ctrler.yawrate_ctrler), &msg2ctrler);
-		}
-		else
-		{
-			ResetCtrler(&system_ctrler.yawrate_ctrler);
-		}
+		RateLoop(&fbvt, &system_ctrler, 0.005);
 		
 		cpt.roll_moment = system_ctrler.rollrate_ctrler.output;
 		cpt.pitch_moment = system_ctrler.pitchrate_ctrler.output;
@@ -523,8 +476,8 @@ void InputControl(OrderType* odt)
 {
 	odt->thrustOrder = (tim4IC3Width-optional_param_global.RCneutral[2])*0.00125;	//کһۯ
 	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//֛̣ԉއ̙׈ָ®	 خճ30£/s
-	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//֛̣ԉއ׈ָ®	 خճ30£
-	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//֛̣ԉއ׈ָ® خճ30£
+	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0015;	//֛̣ԉއ׈ָ®	 خճ30£
+	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.0015;	//֛̣ԉއ׈ָ® خճ30£
 	
 	//vertical
 	if(tim5IC2Width > 1500)
@@ -873,6 +826,40 @@ void WaitRCSignal(void)
 	}
 }
 
+void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBASE_TYPE pos_data_valid)
+{
+		if(pos_data_valid == pdPASS)
+		{
+			fbvt->pos_x = pdt->posX;
+			fbvt->pos_y = pdt->posY;
+			fbvt->pos_z = pdt->posZ;
+			fbvt->pos_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
+			
+			fbvt->velo_x = pdt->veloX;
+			fbvt->velo_y = pdt->veloY;
+			fbvt->velo_z = pdt->veloZ;
+			fbvt->velo_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
+			
+			Blinks(LED1,1);
+		}
+		else
+		{
+			fbvt->pos_valid = 0;
+			fbvt->velo_valid = 0;
+		}	
+		
+		fbvt->roll_angle = adt->rollAngle;
+		fbvt->pitch_angle = adt->pitchAngle;
+		fbvt->yaw_angle = adt->yawAngle;
+		fbvt->angle_valid = ROLL_ANGLE_VALID | PITCH_ANGLE_VALID | YAW_ANGLE_VALID;
+//		fbvt->angle_valid = 0;
+		
+		fbvt->roll_rate = adt->rollAngleRate;
+		fbvt->pitch_rate = adt->pitchAngleRate;
+		fbvt->yaw_rate = adt->yawAngleRate;
+		fbvt->rate_valid = ROLL_RATE_VALID | PITCH_RATE_VALID | YAW_RATE_VALID;	
+}
+
 void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct system_level_ctrler *system_ctrler, float dt)
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
@@ -912,14 +899,14 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 	/*yaw loop*/
 	if(odt->yawOrder<0.05 && odt->yawOrder>-0.05 && (fbvt->angle_valid & YAW_ANGLE_VALID) != 0)
 	{
-		if(desired_yaw - fbvt->yaw_angle > PI)
+		if(*desired_yaw - fbvt->yaw_angle > PI)
 			fbvt->yaw_angle += 2*PI;
-		else if(desired_yaw*0.00025 - fbvt->yaw_angle < -PI)
+		else if(*desired_yaw - fbvt->yaw_angle < -PI)
 			fbvt->yaw_angle -= 2*PI;
 		
-		msg2ctrler.in = desired_yaw;
+		msg2ctrler.in = *desired_yaw;
 		msg2ctrler.fb = fbvt->yaw_angle;
-		msg2ctrler.dt = 0.005 * ANGLE_LOOP_DIVIDER;
+		msg2ctrler.dt = dt * ANGLE_LOOP_DIVIDER;
 		msg2ctrler.deriv_filter = NULL;
 		msg2ctrler.err_filter = NULL;
 		msg2ctrler.use_ref_diff = 0;
@@ -930,10 +917,62 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 	{
 		/*no need to reset yaw ctrler, the state of 
 		which is exactly the output to hold yawrate to zero*/
-		wpt.yaw = fbvt.yaw_angle * 4000;
-		system_ctrler.yaw_ctrler.output = odt.yawOrder
-										+ system_ctrler.yaw_ctrler.kp * system_ctrler.yaw_ctrler.err
-										+ system_ctrler.yaw_ctrler.ki * system_ctrler.yaw_ctrler.integ
-										+ system_ctrler.yaw_ctrler.kd * system_ctrler.yaw_ctrler.deriv;
+		*desired_yaw = fbvt->yaw_angle;
+		system_ctrler->yaw_ctrler.output = odt->yawOrder
+										+ system_ctrler->yaw_ctrler.kp * system_ctrler->yaw_ctrler.err
+										+ system_ctrler->yaw_ctrler.ki * system_ctrler->yaw_ctrler.integ
+										+ system_ctrler->yaw_ctrler.kd * system_ctrler->yaw_ctrler.deriv;
+	}	
+}
+
+void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)
+{
+	PIDCtrlerAuxiliaryType msg2ctrler;
+	/********** roll ***********/
+	if((fbvt->rate_valid & ROLL_RATE_VALID) != 0)
+	{
+		msg2ctrler.in = system_ctrler->roll_ctrler.output;
+		msg2ctrler.fb = fbvt->roll_rate;
+		msg2ctrler.dt = dt;
+		msg2ctrler.deriv_filter = (void *)&droll_rate_lpf;
+		msg2ctrler.err_filter = (void *)&roll_rate_lpf;
+		msg2ctrler.use_ref_diff = 0;
+		
+		PIDProccessing(&(system_ctrler->rollrate_ctrler), &msg2ctrler);
+	}
+	else
+	{
+		ResetCtrler(&system_ctrler->rollrate_ctrler);
+	}
+	/********** pitch ***********/
+	if((fbvt->rate_valid & PITCH_RATE_VALID) != 0)
+	{
+		msg2ctrler.in = system_ctrler->pitch_ctrler.output;
+		msg2ctrler.fb = fbvt->pitch_rate;
+		msg2ctrler.dt = dt;
+		msg2ctrler.deriv_filter = (void *)&dpitch_rate_lpf;
+		msg2ctrler.err_filter = (void *)&pitch_rate_lpf;
+		msg2ctrler.use_ref_diff = 0;
+		
+		PIDProccessing(&(system_ctrler->pitchrate_ctrler), &msg2ctrler);
+	}
+	else
+	{
+		ResetCtrler(&system_ctrler->pitchrate_ctrler);
+	}
+	/********** yaw ***********/
+	if((fbvt->rate_valid & YAW_RATE_VALID) != 0)
+	{	
+		msg2ctrler.in = system_ctrler->yaw_ctrler.output;
+		msg2ctrler.fb = fbvt->yaw_rate;
+		msg2ctrler.dt = dt;
+		msg2ctrler.deriv_filter = (void *)&dyaw_rate_lpf;
+		msg2ctrler.err_filter = (void *)&yaw_rate_lpf;
+		msg2ctrler.use_ref_diff = 0;
+		PIDProccessing(&(system_ctrler->yawrate_ctrler), &msg2ctrler);
+	}
+	else
+	{
+		ResetCtrler(&system_ctrler->yawrate_ctrler);
 	}	
 }

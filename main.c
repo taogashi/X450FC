@@ -72,7 +72,7 @@ int main(void)
 	xUartParaQueue = xQueueCreate(1, sizeof(u16));
 	
 	/*uart task send waypoint to flightConTask*/
-	xUartWayPointQueue = xQueueCreate(10,sizeof(WayPointType));
+	xUartWayPointQueue = xQueueCreate(5,sizeof(WayPointType));
 	/*read sensor data and send to other tasks*/
 	xSenToAhrsQueue = xQueueCreate(1,sizeof(SensorDataType));
 
