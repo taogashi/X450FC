@@ -218,8 +218,12 @@ void vFlyConTask(void* pvParameters)
 		/****************** angle loop ************************/
 		if(angle_loop_cnt++ >= ANGLE_LOOP_DIVIDER)
 		{
-			AngleLoop(&fbvt, &odt, &yaw_locked, &system_ctrler, 0.005);
+			if((fbvt.angle_valid & ANGLE_ALL_VALID)!=0)
+			{
+				AngleLoop(&fbvt, &odt, &yaw_locked, &system_ctrler, 0.005);
 			angle_loop_cnt = 0;
+			}
+			
 		}
 		
 		/************************* rate loop ***********************/
