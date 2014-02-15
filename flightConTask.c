@@ -192,7 +192,6 @@ void vFlyConTask(void* pvParameters)
 			{
 				wpt.x = (int)(fbvt.pos_x*1000);
 				wpt.y = (int)(fbvt.pos_y*1000);
-				wpt.height = (int)(fbvt.pos_z*1000);
 				wpt.yaw = (u16)(fbvt.yaw_angle*4000);
 			}
 		}
@@ -200,6 +199,25 @@ void vFlyConTask(void* pvParameters)
 		{
 			ResetCtrler(&(system_ctrler.px_ctrler));
 			ResetCtrler(&(system_ctrler.py_ctrler));
+		}
+
+		if((fbvt.pos_valid & POS_Z_VALID)!=0 && (fbvt.velo_valid & VELO_Z_VALID)!=0)
+		{
+			if(odt.hover_en == 1)
+			{
+				/*hold height*/
+			}
+			else
+			{
+				wpt.height = (int)(fbvt.pos_z*1000);
+				ResetCtrler(&(system_ctrler.height_ctrler));
+				ResetCtrler(&(system_ctrler.velo_z_ctrler));
+			}
+		}
+		else
+		{
+			ResetCtrler(&(system_ctrler.height_ctrler));
+			ResetCtrler(&(system_ctrler.velo_z_ctrler));
 		}
 		
 		
@@ -808,6 +826,9 @@ void WriteMotor(OutputType* opt)
 /* roll the roll-stick rightmost to leftmost to start*/
 void WaitRCSignal(void)
 {
+	u16 i=0;
+	float neutral[4] = {0.0};
+
 	while(tim4IC1Width<1800)
 	{
 		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
@@ -824,40 +845,54 @@ void WaitRCSignal(void)
 	{
 		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
 	}
+
+	for(i=0; i<50; i++)
+	{
+		neutral[0] += tim4IC1Width;
+		neutral[1] += tim4IC2Width;
+		neutral[2] += tim4IC3Width;
+		neutral[3] += tim4IC4Width;
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
+
+	optional_param_global.RCneutral[0] = (s16)(neutral[0]/50);
+	optional_param_global.RCneutral[1] = (s16)(neutral[1]/50);
+	optional_param_global.RCneutral[2] = (s16)(neutral[2]/50);
+	optional_param_global.RCneutral[3] = (s16)(neutral[3]/50);
 }
 
 void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBASE_TYPE pos_data_valid)
 {
-		if(pos_data_valid == pdPASS)
-		{
-			fbvt->pos_x = pdt->posX;
-			fbvt->pos_y = pdt->posY;
-			fbvt->pos_z = pdt->posZ;
-			fbvt->pos_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
-			
-			fbvt->velo_x = pdt->veloX;
-			fbvt->velo_y = pdt->veloY;
-			fbvt->velo_z = pdt->veloZ;
-			fbvt->velo_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
-			
-			Blinks(LED1,1);
-		}
-		else
-		{
-			fbvt->pos_valid = 0;
-			fbvt->velo_valid = 0;
-		}	
+	if(pos_data_valid == pdPASS)
+	{
+		fbvt->pos_x = pdt->posX;
+		fbvt->pos_y = pdt->posY;
+		fbvt->pos_z = pdt->posZ;
+		fbvt->pos_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
 		
-		fbvt->roll_angle = adt->rollAngle;
-		fbvt->pitch_angle = adt->pitchAngle;
-		fbvt->yaw_angle = adt->yawAngle;
-		fbvt->angle_valid = ROLL_ANGLE_VALID | PITCH_ANGLE_VALID | YAW_ANGLE_VALID;
+		fbvt->velo_x = pdt->veloX;
+		fbvt->velo_y = pdt->veloY;
+		fbvt->velo_z = pdt->veloZ;
+		fbvt->velo_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
+		
+		Blinks(LED1,1);
+	}
+	else
+	{
+		fbvt->pos_valid = 0;
+		fbvt->velo_valid = 0;
+	}	
+	
+	fbvt->roll_angle = adt->rollAngle;
+	fbvt->pitch_angle = adt->pitchAngle;
+	fbvt->yaw_angle = adt->yawAngle;
+	fbvt->angle_valid = ROLL_ANGLE_VALID | PITCH_ANGLE_VALID | YAW_ANGLE_VALID;
 //		fbvt->angle_valid = 0;
-		
-		fbvt->roll_rate = adt->rollAngleRate;
-		fbvt->pitch_rate = adt->pitchAngleRate;
-		fbvt->yaw_rate = adt->yawAngleRate;
-		fbvt->rate_valid = ROLL_RATE_VALID | PITCH_RATE_VALID | YAW_RATE_VALID;	
+	
+	fbvt->roll_rate = adt->rollAngleRate;
+	fbvt->pitch_rate = adt->pitchAngleRate;
+	fbvt->yaw_rate = adt->yawAngleRate;
+	fbvt->rate_valid = ROLL_RATE_VALID | PITCH_RATE_VALID | YAW_RATE_VALID;	
 }
 
 void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct system_level_ctrler *system_ctrler, float dt)

@@ -3,7 +3,9 @@
 
 #include "stm32f4xx.h"
 
-#define ANGLE_LOOP_DIVIDER 3
+#define POS_LOOP_DIVIDER	16
+#define VELO_LOOP_DIVIDER	8
+#define ANGLE_LOOP_DIVIDER 	4
 
 #define POS_X_VALID		0x01
 #define POS_Y_VALID		0x02
