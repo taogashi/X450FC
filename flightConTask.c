@@ -7,6 +7,7 @@
 #include "uartTask.h"
 #include "ledTask.h"
 #include "filter.h"
+#include "pidctrler.h"
 #include <arm_math.h>
 #include <stdio.h>
 
@@ -57,8 +58,6 @@ void LoadParam(void);
 void InputControl(OrderType* odt);
 void ControllerInit(void);
 void ControllerUpdate(u16 index);
-void ResetCtrler(PIDCtrlerType *ctrler);
-void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info);
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle);
 void OutputControl(CtrlProcType *cpt, OutputType* opt);
 void WriteMotor(OutputType* opt);
@@ -226,7 +225,7 @@ void vFlyConTask(void* pvParameters)
 				if((fbvt.velo_valid & VELO_Z_VALID)!=0)
 				{
 					HeightVeloLoop(&fbvt, &system_ctrler, 0.005);
-					cpt.thrust_out = optional_param_global.miscel[0] + system_ctrler.velo_z_ctrler.output; 
+					cpt.thrust_out += system_ctrler.velo_z_ctrler.output; 
 					velo_loop_cnt = 0;
 					fbvt.velo_valid &= (~VELO_Z_VALID);
 				}
@@ -608,51 +607,6 @@ void ControllerUpdate(u16 index)
 	xQueueSend(xDiskParamQueue, &index, 0);	
 }
 
-void ResetCtrler(PIDCtrlerType *ctrler)
-{
-	ctrler->integ = 0.0;
-	ctrler->prev_err = 0.0;
-	ctrler->output = 0.0;
-}
-
-void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
-{
-	ctrler->desired = info->in;
-	ctrler->actual = info->fb;
-	
-	ctrler->err = ctrler->desired - ctrler->actual;
-	if(info->err_filter != NULL)
-		ctrler->err = GaussianFilter((GFilterType *)(info->err_filter), ctrler->err);
-	
-	if(info->use_ref_diff == 0)
-		ctrler->deriv = (ctrler->err - ctrler->prev_err)/info->dt;
-	
-	if(info->deriv_filter != NULL)
-		ctrler->deriv = GaussianFilter((GFilterType *)(info->deriv_filter), ctrler->deriv);
-	
-	ctrler->prev_err = ctrler->err;
-	ctrler->integ += ctrler->err*info->dt;
-	
-	if(ctrler->integ > ctrler->i_limit)
-		ctrler->integ = ctrler->i_limit;
-	else if(ctrler->integ < -ctrler->i_limit)
-		ctrler->integ = -ctrler->i_limit;
-	
-	if(ctrler->deriv > ctrler->d_limit)
-		ctrler->deriv = ctrler->d_limit;
-	else if(ctrler->deriv < -ctrler->d_limit)
-		ctrler->deriv = -ctrler->d_limit;
-	
-	ctrler->output = ctrler->kp * ctrler->err 
-					+ ctrler->ki * ctrler->integ
-					+ ctrler->kd * ctrler->deriv;
-	
-	if(ctrler->output > ctrler->out_limit)
-		ctrler->output = ctrler->out_limit;
-	else if(ctrler->output < -ctrler->out_limit)
-		ctrler->output = -ctrler->out_limit;
-}
-
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
 {
 	float cosfi = arm_cos_f32(yawAngle);
@@ -818,7 +772,6 @@ void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrle
 	msg2ctrler.in = wpt->x*0.001;
 	msg2ctrler.fb = fbvt->pos_x;
 	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
-	msg2ctrler.use_ref_diff = 0;
 	msg2ctrler.deriv_filter = NULL;
 	msg2ctrler.err_filter = NULL;
 
@@ -827,7 +780,6 @@ void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrle
 	msg2ctrler.in = wpt->y*0.001;
 	msg2ctrler.fb = fbvt->pos_y;
 	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
-	msg2ctrler.use_ref_diff = 0;
 	msg2ctrler.deriv_filter = NULL;
 	msg2ctrler.err_filter = NULL;
 
@@ -841,7 +793,6 @@ void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrle
 	msg2ctrler.in = system_ctrler->px_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_x;
 	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
-	msg2ctrler.use_ref_diff = 0;
 	msg2ctrler.deriv_filter = NULL;
 	msg2ctrler.err_filter = NULL;
 
@@ -850,7 +801,6 @@ void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrle
 	msg2ctrler.in = system_ctrler->py_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_y;
 	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
-	msg2ctrler.use_ref_diff = 0;
 	msg2ctrler.deriv_filter = NULL;
 	msg2ctrler.err_filter = NULL;
 
@@ -863,9 +813,9 @@ void HeightLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ct
 	msg2ctrler.in = wpt->height*0.001;
 	msg2ctrler.fb = fbvt->pos_z;
 	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
-	msg2ctrler.use_ref_diff = 0;
 	msg2ctrler.deriv_filter = NULL;
 	msg2ctrler.err_filter = NULL;
+	msg2ctrler.pid_type = PID_TYPE_POS;
 	
 	PIDProccessing(&(system_ctrler->height_ctrler), &msg2ctrler);	
 }
@@ -873,12 +823,13 @@ void HeightLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ct
 void HeightVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
+	
 	msg2ctrler.in = system_ctrler->height_ctrler.output;
 	msg2ctrler.fb = -fbvt->velo_z;
 	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
-	msg2ctrler.err_filter = (void *)&dheight_lpf;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.use_ref_diff = 0;
+	msg2ctrler.err_filter = (void *)&height_lpf;
+	msg2ctrler.deriv_filter = (void *)&dheight_lpf;
+	msg2ctrler.pid_type = PID_TYPE_INC;
 	
 	PIDProccessing(&(system_ctrler->velo_z_ctrler), &msg2ctrler);	
 }
@@ -886,25 +837,21 @@ void HeightVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ct
 void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct system_level_ctrler *system_ctrler, float dt)
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
+	msg2ctrler.dt = dt * ANGLE_LOOP_DIVIDER;
+	msg2ctrler.deriv_filter = NULL;
+	msg2ctrler.err_filter = NULL;
+	msg2ctrler.pid_type = PID_TYPE_POS;
 	/******************* roll*******************/
 
 	msg2ctrler.in = odt->rollOrder;
 	msg2ctrler.fb = fbvt->roll_angle;
-	msg2ctrler.dt = dt * ANGLE_LOOP_DIVIDER;
-	msg2ctrler.use_ref_diff = 0;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-	
+		
 	PIDProccessing(&(system_ctrler->roll_ctrler),&msg2ctrler);
 	
 	/******************* pitch *******************/
 
 	msg2ctrler.in = odt->pitchOrder;
 	msg2ctrler.fb = fbvt->pitch_angle;
-	msg2ctrler.dt = dt * ANGLE_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-	msg2ctrler.use_ref_diff = 0;
 	
 	PIDProccessing(&(system_ctrler->pitch_ctrler), &msg2ctrler);
 
@@ -918,10 +865,6 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 		
 		msg2ctrler.in = *desired_yaw;
 		msg2ctrler.fb = fbvt->yaw_angle;
-		msg2ctrler.dt = dt * ANGLE_LOOP_DIVIDER;
-		msg2ctrler.deriv_filter = NULL;
-		msg2ctrler.err_filter = NULL;
-		msg2ctrler.use_ref_diff = 0;
 		
 		PIDProccessing(&(system_ctrler->yaw_ctrler), &msg2ctrler);
 	}
@@ -940,34 +883,30 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
+	msg2ctrler.pid_type = PID_TYPE_POS;
+	msg2ctrler.dt = dt;
 	
 	/********** roll ***********/
 	msg2ctrler.in = system_ctrler->roll_ctrler.output;
 	msg2ctrler.fb = fbvt->roll_rate;
-	msg2ctrler.dt = dt;
 	msg2ctrler.deriv_filter = (void *)&droll_rate_lpf;
 	msg2ctrler.err_filter = (void *)&roll_rate_lpf;
-	msg2ctrler.use_ref_diff = 0;
 	
 	PIDProccessing(&(system_ctrler->rollrate_ctrler), &msg2ctrler);
 
 	/********** pitch ***********/
 	msg2ctrler.in = system_ctrler->pitch_ctrler.output;
 	msg2ctrler.fb = fbvt->pitch_rate;
-	msg2ctrler.dt = dt;
 	msg2ctrler.deriv_filter = (void *)&dpitch_rate_lpf;
 	msg2ctrler.err_filter = (void *)&pitch_rate_lpf;
-	msg2ctrler.use_ref_diff = 0;
 	
 	PIDProccessing(&(system_ctrler->pitchrate_ctrler), &msg2ctrler);
 	
 	/********** yaw ***********/
 	msg2ctrler.in = system_ctrler->yaw_ctrler.output;
 	msg2ctrler.fb = fbvt->yaw_rate;
-	msg2ctrler.dt = dt;
 	msg2ctrler.deriv_filter = (void *)&dyaw_rate_lpf;
 	msg2ctrler.err_filter = (void *)&yaw_rate_lpf;
-	msg2ctrler.use_ref_diff = 0;
 	
 	PIDProccessing(&(system_ctrler->yawrate_ctrler), &msg2ctrler);
 }
