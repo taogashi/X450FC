@@ -201,37 +201,44 @@ void vFlyConTask(void* pvParameters)
 		}
 		
 		/****************** velocity loop *********************/
-		if(velo_loop_cnt++ >= VELO_LOOP_DIVIDER)
+		if(odt.hover_en == 1)
 		{
-			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
+			if(velo_loop_cnt++ >= VELO_LOOP_DIVIDER)
 			{
-				/* velocity control*/
-				HorVeloLoop(&fbvt, &system_ctrler, 0.005);
-				Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
-					, system_ctrler.velo_y_ctrler.output
-					, &odt
-					, fbvt.yaw_angle);
-				velo_loop_cnt = 0;
-				fbvt.velo_valid &= (~VELO_X_VALID);
-				fbvt.velo_valid &= (~VELO_Y_VALID);
+				if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
+				{
+					/* velocity control*/
+					HorVeloLoop(&fbvt, &system_ctrler, 0.005);
+					Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
+						, system_ctrler.velo_y_ctrler.output
+						, &odt
+						, fbvt.yaw_angle);
+					velo_loop_cnt = 0;
+					fbvt.velo_valid &= (~VELO_X_VALID);
+					fbvt.velo_valid &= (~VELO_Y_VALID);
+				}
+				else if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
+				{
+					ResetCtrler(&system_ctrler.velo_x_ctrler);
+					ResetCtrler(&system_ctrler.velo_y_ctrler);
+				}
+				
+				if((fbvt.velo_valid & VELO_Z_VALID)!=0)
+				{
+					HeightVeloLoop(&fbvt, &system_ctrler, 0.005);
+					cpt.thrust_out = optional_param_global.miscel[0] + system_ctrler.velo_z_ctrler.output; 
+					velo_loop_cnt = 0;
+					fbvt.velo_valid &= (~VELO_Z_VALID);
+				}
+				else if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
+				{
+					ResetCtrler(&system_ctrler.velo_z_ctrler);
+				}
 			}
-			else if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
-			{
-				ResetCtrler(&system_ctrler.velo_x_ctrler);
-				ResetCtrler(&system_ctrler.velo_y_ctrler);
-			}
-			
-			if((fbvt.velo_valid & VELO_Z_VALID)!=0)
-			{
-				HeightVeloLoop(&fbvt, &system_ctrler, 0.005);
-				cpt.thrust_out = optional_param_global.miscel[0] + system_ctrler.velo_z_ctrler.output; 
-				velo_loop_cnt = 0;
-				fbvt.velo_valid &= (~VELO_Z_VALID);
-			}
-			else if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
-			{
-				ResetCtrler(&system_ctrler.velo_z_ctrler);
-			}
+		}
+		else
+		{
+			cpt.thrust_out = odt.thrustOrder;
 		}
 		
 		/****************** angle loop ************************/
@@ -442,23 +449,23 @@ void ControllerInit(void)
 	system_ctrler.rollrate_ctrler.kp = optional_param_global.loop_pid[0].xPID[0];
 	system_ctrler.rollrate_ctrler.ki = optional_param_global.loop_pid[0].xPID[1];
 	system_ctrler.rollrate_ctrler.kd = optional_param_global.loop_pid[0].xPID[2];
-	system_ctrler.rollrate_ctrler.i_limit = 0.6;
-	system_ctrler.rollrate_ctrler.d_limit = 10.0;
-	system_ctrler.rollrate_ctrler.out_limit = 300.0;
+	system_ctrler.rollrate_ctrler.i_limit = 0.1;
+	system_ctrler.rollrate_ctrler.d_limit = 0.1;
+	system_ctrler.rollrate_ctrler.out_limit = 0.4;
 	
 	system_ctrler.pitchrate_ctrler.kp = optional_param_global.loop_pid[0].yPID[0];
 	system_ctrler.pitchrate_ctrler.ki = optional_param_global.loop_pid[0].yPID[1];
 	system_ctrler.pitchrate_ctrler.kd = optional_param_global.loop_pid[0].yPID[2];
-	system_ctrler.pitchrate_ctrler.i_limit = 0.6;
-	system_ctrler.pitchrate_ctrler.d_limit = 10.0;
-	system_ctrler.pitchrate_ctrler.out_limit = 300.0;
+	system_ctrler.pitchrate_ctrler.i_limit = 0.1;
+	system_ctrler.pitchrate_ctrler.d_limit = 0.1;
+	system_ctrler.pitchrate_ctrler.out_limit = 0.4;
 	
 	system_ctrler.yawrate_ctrler.kp = optional_param_global.loop_pid[0].zPID[0];
 	system_ctrler.yawrate_ctrler.ki = optional_param_global.loop_pid[0].zPID[1];
 	system_ctrler.yawrate_ctrler.kd = optional_param_global.loop_pid[0].zPID[2];
-	system_ctrler.yawrate_ctrler.i_limit = 0.6;
-	system_ctrler.yawrate_ctrler.d_limit = 10.0;
-	system_ctrler.yawrate_ctrler.out_limit = 300.0;
+	system_ctrler.yawrate_ctrler.i_limit = 0.1;
+	system_ctrler.yawrate_ctrler.d_limit = 0.1;
+	system_ctrler.yawrate_ctrler.out_limit = 0.4;
 	
 	/*angle loop*/
 	system_ctrler.roll_ctrler.kp = optional_param_global.loop_pid[1].xPID[0];
@@ -466,21 +473,21 @@ void ControllerInit(void)
 	system_ctrler.roll_ctrler.kd = optional_param_global.loop_pid[1].xPID[2];
 	system_ctrler.roll_ctrler.i_limit = 0.6;
 	system_ctrler.roll_ctrler.d_limit = 1.0;
-	system_ctrler.roll_ctrler.out_limit = 4.0;
+	system_ctrler.roll_ctrler.out_limit = 2.5;
 	
 	system_ctrler.pitch_ctrler.kp = optional_param_global.loop_pid[1].yPID[0];
 	system_ctrler.pitch_ctrler.ki = optional_param_global.loop_pid[1].yPID[1];
 	system_ctrler.pitch_ctrler.kd = optional_param_global.loop_pid[1].yPID[2];
 	system_ctrler.pitch_ctrler.i_limit = 0.6;
 	system_ctrler.pitch_ctrler.d_limit = 1.0;
-	system_ctrler.pitch_ctrler.out_limit = 4.0;
+	system_ctrler.pitch_ctrler.out_limit = 2.5;
 	
 	system_ctrler.yaw_ctrler.kp = optional_param_global.loop_pid[1].zPID[0];
 	system_ctrler.yaw_ctrler.ki = optional_param_global.loop_pid[1].zPID[1];
 	system_ctrler.yaw_ctrler.kd = optional_param_global.loop_pid[1].zPID[2];
 	system_ctrler.yaw_ctrler.i_limit = 0.6;
 	system_ctrler.yaw_ctrler.d_limit = 1.0;
-	system_ctrler.yaw_ctrler.out_limit = 4.0;
+	system_ctrler.yaw_ctrler.out_limit = 2.5;
 	
 	/*velo loop*/
 	system_ctrler.velo_x_ctrler.kp = optional_param_global.loop_pid[2].xPID[0];
@@ -717,37 +724,36 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 /* this function are platform relevant*/
 void WriteMotor(OutputType* opt)
 {
-//	if(opt->motor1_Out < 0.01)
-//		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
-//		
-//	if(opt->motor2_Out < 0.01)
-//		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
-//		
-//	if(opt->motor3_Out < 0.01)
-//		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
-//		
-//	if(opt->motor4_Out < 0.01)
-//		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
+	if(opt->motor1_Out < 0.01)
+		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+		
+	if(opt->motor2_Out < 0.01)
+		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+		
+	if(opt->motor3_Out < 0.01)
+		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+		
+	if(opt->motor4_Out < 0.01)
+		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
 
-	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-	TIM_SetCompare4(TIM3,100);	//youmenOut	
+//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/
 void WaitRCSignal(void)
 {
 	u16 i=0;
-	float neutral[4] = {0.0};
 
 	while(tim4IC1Width<1800)
 	{
@@ -768,17 +774,12 @@ void WaitRCSignal(void)
 
 	for(i=0; i<50; i++)
 	{
-		neutral[0] += tim4IC1Width;
-		neutral[1] += tim4IC2Width;
-		neutral[2] += tim4IC3Width;
-		neutral[3] += tim4IC4Width;
+		optional_param_global.RCneutral[0] = tim4IC1Width;
+		optional_param_global.RCneutral[1] = tim4IC2Width;
+		optional_param_global.RCneutral[2] = tim4IC3Width;
+		optional_param_global.RCneutral[3] = tim4IC4Width;
 		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
 	}
-
-	optional_param_global.RCneutral[0] = (s16)(neutral[0]/50);
-	optional_param_global.RCneutral[1] = (s16)(neutral[1]/50);
-	optional_param_global.RCneutral[2] = (s16)(neutral[2]/50);
-	optional_param_global.RCneutral[3] = (s16)(neutral[3]/50);
 }
 
 void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBASE_TYPE pos_data_valid)
