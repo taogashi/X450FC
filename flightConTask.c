@@ -7,6 +7,7 @@
 #include "uartTask.h"
 #include "ledTask.h"
 #include "filter.h"
+#include "pidctrler.h"
 #include <arm_math.h>
 #include <stdio.h>
 
@@ -57,8 +58,7 @@ void LoadParam(void);
 void InputControl(OrderType* odt);
 void ControllerInit(void);
 void ControllerUpdate(u16 index);
-void ResetCtrler(PIDCtrlerType *ctrler);
-void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info);
+
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle);
 void OutputControl(CtrlProcType *cpt, OutputType* opt);
 void WriteMotor(OutputType* opt);
@@ -601,51 +601,6 @@ void ControllerUpdate(u16 index)
 	xQueueSend(xDiskParamQueue, &index, 0);	
 }
 
-void ResetCtrler(PIDCtrlerType *ctrler)
-{
-	ctrler->integ = 0.0;
-	ctrler->prev_err = 0.0;
-	ctrler->output = 0.0;
-}
-
-void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
-{
-	ctrler->desired = info->in;
-	ctrler->actual = info->fb;
-	
-	ctrler->err = ctrler->desired - ctrler->actual;
-	if(info->err_filter != NULL)
-		ctrler->err = GaussianFilter((GFilterType *)(info->err_filter), ctrler->err);
-	
-	if(info->use_ref_diff == 0)
-		ctrler->deriv = (ctrler->err - ctrler->prev_err)/info->dt;
-	
-	if(info->deriv_filter != NULL)
-		ctrler->deriv = GaussianFilter((GFilterType *)(info->deriv_filter), ctrler->deriv);
-	
-	ctrler->prev_err = ctrler->err;
-	ctrler->integ += ctrler->err*info->dt;
-	
-	if(ctrler->integ > ctrler->i_limit)
-		ctrler->integ = ctrler->i_limit;
-	else if(ctrler->integ < -ctrler->i_limit)
-		ctrler->integ = -ctrler->i_limit;
-	
-	if(ctrler->deriv > ctrler->d_limit)
-		ctrler->deriv = ctrler->d_limit;
-	else if(ctrler->deriv < -ctrler->d_limit)
-		ctrler->deriv = -ctrler->d_limit;
-	
-	ctrler->output = ctrler->kp * ctrler->err 
-					+ ctrler->ki * ctrler->integ
-					+ ctrler->kd * ctrler->deriv;
-	
-	if(ctrler->output > ctrler->out_limit)
-		ctrler->output = ctrler->out_limit;
-	else if(ctrler->output < -ctrler->out_limit)
-		ctrler->output = -ctrler->out_limit;
-}
-
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
 {
 	float cosfi = arm_cos_f32(yawAngle);
@@ -717,30 +672,30 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 /* this function are platform relevant*/
 void WriteMotor(OutputType* opt)
 {
-	if(opt->motor1_Out < 0.01)
-		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
-		
-	if(opt->motor2_Out < 0.01)
-		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
-		
-	if(opt->motor3_Out < 0.01)
-		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
-		
-	if(opt->motor4_Out < 0.01)
-		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
+//	if(opt->motor1_Out < 0.01)
+//		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+//		
+//	if(opt->motor2_Out < 0.01)
+//		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+//		
+//	if(opt->motor3_Out < 0.01)
+//		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+//		
+//	if(opt->motor4_Out < 0.01)
+//		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
 
-//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-//	TIM_SetCompare4(TIM3,100);	//youmenOut	
+	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/

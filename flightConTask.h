@@ -101,33 +101,6 @@ typedef struct{
 }OutputType;
 
 typedef struct{
-	float desired;
-	float actual;
-	float err;
-	float prev_err;
-	float deriv;	
-	float integ;
-	float i_limit;
-	float d_limit;
-	float out_limit;
-	
-	float kp;
-	float kd;
-	float ki;
-	float output;
-}PIDCtrlerType;
-
-typedef struct{
-	float in;
-	float fb;
-	float dt;
-	u8 use_ref_diff;
-	float ref_diff;
-	void *deriv_filter;
-	void *err_filter;
-}PIDCtrlerAuxiliaryType;
-
-typedef struct{
 	u8 properties;	//0:normal
 					//1:immediately
 					//2:arrived
