@@ -667,30 +667,30 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 /* this function are platform relevant*/
 void WriteMotor(OutputType* opt)
 {
-	if(opt->motor1_Out < 0.01)
-		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
-		
-	if(opt->motor2_Out < 0.01)
-		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
-		
-	if(opt->motor3_Out < 0.01)
-		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
-		
-	if(opt->motor4_Out < 0.01)
-		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
-	else
-		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
+//	if(opt->motor1_Out < 0.01)
+//		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+//		
+//	if(opt->motor2_Out < 0.01)
+//		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+//		
+//	if(opt->motor3_Out < 0.01)
+//		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+//		
+//	if(opt->motor4_Out < 0.01)
+//		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+//	else
+//		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
 
-//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-//	TIM_SetCompare4(TIM3,100);	//youmenOut	
+	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/
