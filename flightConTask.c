@@ -760,6 +760,9 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (POS_X_VALID | POS_Y_VALID);
 	}
+	
+	fbvt->pos_valid = 0;
+	fbvt->velo_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
