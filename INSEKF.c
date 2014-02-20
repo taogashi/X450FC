@@ -18,6 +18,7 @@
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
+xQueueHandle INS2HeightQueue;
 
 float navParamCur[9];	//current navigation parameters, for flight control
 float navParamK[9]={0,0,0,0,0,0,0.1,-0.37,-0.01};	//k time navigation parameters, for GPS data fusion
@@ -160,10 +161,6 @@ void vINSAligTask(void* pvParameters)
 	
 	portBASE_TYPE xstatus;
 	
-	/*Enable ultrasonic sensor TIMER*/
-	TIM2_Config();
-	TIM2_IT_Config();
-	
 	/**/
 	xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);	//capture an INS frame	 
 
@@ -221,7 +218,7 @@ void vINSAligTask(void* pvParameters)
 		xQueueReceive(AHRSToINSQueue,&a2it,portMAX_DELAY);
 		PutToBuffer(&a2it);
 		
-		GetUltraSonicMeasure(&uw_height);
+		GetUltraSonicMeasure(&uw_height, RESULT_CLEAR);
 		if(xQueueReceive(xUartVisionQueue, &vdt, 0) == pdPASS)
 		{
 			vision_validate_cnt ++;
@@ -269,13 +266,8 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
-//	char printf_buffer[100];
-//	u16 string_len;
-//	u8 CNT=0;
-	
 	u8 i;	
 	u8 acc_bias_stable = 0;	//indicate whether acc bias is stably estimated
-//	char logData[100]={0};
 	
 	ekf_filter filter;	
 	float dt;
@@ -288,16 +280,16 @@ void vIEKFProcessTask(void* pvParameters)
 	float uw_height;
 
 	VisionDataType vdt={0.0,0.0,0.0};
-//	portBASE_TYPE xstatus;
-	
 	PosDataType pdt;	//position message send to flight control task
 
 	/*initial filter*/
-	filter=ekf_filter_new(9,3,(float *)iQ,(float *)iR,INS_GetA,INS_GetH,INS_aFunc,INS_hFunc);
+	filter=ekf_filter_new(9,3,(float *)iQ,(float *)iR
+						,INS_GetA,INS_GetH
+						,INS_aFunc,INS_hFunc);
 	memcpy(filter->x,x,filter->state_dim*sizeof(float));
 	memcpy(filter->P,iP,filter->state_dim*filter->state_dim*sizeof(float));
 
-	GetUltraSonicMeasure(&uw_height);
+	GetUltraSonicMeasure(&uw_height, RESULT_CLEAR);
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&cur_a2it,portMAX_DELAY);
 	
@@ -328,7 +320,7 @@ void vIEKFProcessTask(void* pvParameters)
 					, NULL);
 			
 //		xstatus=xQueueReceive(xUartVisionQueue,&vdt,0);	//get measurement data
-		GetUltraSonicMeasure(&uw_height);
+		GetUltraSonicMeasure(&uw_height, RESULT_CLEAR);
 		if(xQueueReceive(xUartVisionQueue,&vdt,0) == pdPASS)
 		{
 			float meas_Err[3]={0.0};
@@ -346,40 +338,12 @@ void vIEKFProcessTask(void* pvParameters)
 				meas_Err[i] = navParamK[i] - measure[i];
 			}
 			
-			/*data record*/
-			/*uncomment this to record data for matlab simulation*/
-//			sprintf(logData,"%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
-//											insBufferK[0],insBufferK[1],insBufferK[2],
-//											insBufferK[3],insBufferK[4],insBufferK[5],
-//											insBufferK[6],insBufferK[7],
-//											measure[0],measure[1],measure[2],measure[3],measure[4],
-//											navParamK[3],navParamK[4]);
-//			xQueueSend(xDiskLogQueue,logData,0);
-			
-//			sprintf(logData, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
-//							measure[0],measure[1],measure[3],measure[4],
-//							navParamK[0],navParamK[1],navParamK[3],navParamK[4],
-//							navParamCur[0],navParamCur[1],navParamCur[3],navParamCur[4]);
-//			xQueueSend(xDiskLogQueue,logData,0);
-			/*update*/
 			EKF_update(filter
 						, (void *)meas_Err
 						, NULL
 						, NULL
 						, (void *)(filter->x)
 						, NULL);	
-//			if(CNT++ >= 4)
-//			{
-//				CNT = 0;
-////				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
-////				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-////							,navParamK[0],navParamK[1],navParamK[2]
-////							,navParamK[3],navParamK[4],navParamK[5]
-////							,navParamK[6],navParamK[7],navParamK[8]);
-////				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
-////							,cur_a2it.acc[0], cur_a2it.acc[1], cur_a2it.acc[2]);
-////				UartSend(printf_buffer, string_len);
-//			}
 			/*
 			 *correct navParamCur
 			 */
@@ -443,17 +407,6 @@ void vIEKFProcessTask(void* pvParameters)
 					INS_Update(navParamCur,&cur_a2it);
 				}
 			}
-		}
-		else
-		{
-			/*data record*/
-//			sprintf(logData,"%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
-//											insBufferK[0],insBufferK[1],insBufferK[2],
-//											insBufferK[3],insBufferK[4],insBufferK[5],
-//											insBufferK[6],insBufferK[7],
-//											0.0,0.0,0.0,0.0,0.0,
-//											navParamK[3],navParamK[4]);
-//			xQueueSend(xDiskLogQueue,logData,0);
 		}
 	}
 }

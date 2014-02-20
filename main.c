@@ -35,6 +35,7 @@
 #include "flightConTask.h"
 #include "uartTask.h"
 #include "INSEKF.h"
+#include "heightEKF.h"
 
 /** @addtogroup STM32F4-Discovery_Demo
   * @{
@@ -80,8 +81,11 @@ int main(void)
 	AHRSToFlightConQueue = xQueueCreate(1,sizeof(AHRSDataType));
 	/*AHRS should send data to INS task to offer inertial data*/
 	AHRSToINSQueue = xQueueCreate(1,sizeof(AHRS2INSType));
+	AHRS2HeightQueue = xQueueCreate(1,sizeof(AHRS2INSType));
 	/*INS task should send data to flight control task to support the position control*/
 	INSToFlightConQueue = xQueueCreate(1,sizeof(PosDataType));
+	INS2HeightQueue = xQueueCreate(1,sizeof(float)*3);
+	height2FlightQueue = xQueueCreate(1,sizeof(VerticalType));
 
 	/*there are two queues to communicate with the tf card*/
 	/*the first one to read/write basic parameters like PID para, etc.*/
@@ -93,7 +97,8 @@ int main(void)
 	xTaskCreate(vSenAHRSRead, ( signed portCHAR * ) "AHRSread", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+3, NULL );
 
 	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+1024, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
-	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
+	xTaskCreate(vhEKFTask, (signed portCHAR *) "height_ekf", configMINIMAL_STACK_SIZE+256, (void *)NULL, tskIDLE_PRIORITY+2, NULL);
+	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
 
 	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
 

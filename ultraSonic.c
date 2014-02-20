@@ -109,11 +109,12 @@ void TIM2_IRQHandler(void)
 	}
 }
 
-u8 GetUltraSonicMeasure(float *dist)
+u8 GetUltraSonicMeasure(float *dist, u8 Clear)
 {
 	if(DataReady == 0)
 		return 0;
-	DataReady = 0;
+	if(Clear == 1)
+		DataReady = 0;
 	*dist = (float)tim2IC4Width*0.0024293-0.09286;
 	return 1;
 }

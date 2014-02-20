@@ -15,7 +15,7 @@ void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
 	ctrler->actual = info->fb;
 	
 	/* increment PID */
-	if(info->pid_type_inc == 1)
+	if(info->pid_type == PID_TYPE_INC)
 	{
 		ctrler->integ = ctrler->desired - ctrler->actual;
 		
@@ -58,6 +58,11 @@ void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
 	ctrler->output = ctrler->kp * ctrler->err 
 					+ ctrler->ki * ctrler->integ
 					+ ctrler->kd * ctrler->deriv;
+					
+	if(info->pid_type == PID_TYPE_INC)
+	{
+		ctrler->output *= info->dt;
+	}
 	
 	if(ctrler->output > ctrler->out_limit)
 		ctrler->output = ctrler->out_limit;

@@ -9,6 +9,7 @@
 
 xQueueHandle AHRSToFlightConQueue;
 xQueueHandle AHRSToINSQueue;
+xQueueHandle AHRS2HeightQueue;
 
 const float P[16]={1,	0,	0, 0,
 					0,	1,	0, 0,
@@ -223,6 +224,7 @@ void vAEKFProcessTask(void* pvParameters)
 		{
 			a2it.dt = 0.0;
 		}
+		xQueueSend(AHRS2HeightQueue,&a2it,0);
 
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}

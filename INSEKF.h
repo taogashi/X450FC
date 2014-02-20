@@ -18,6 +18,7 @@ typedef struct
 }PosDataType;
 
 extern xQueueHandle INSToFlightConQueue;
+extern xQueueHandle INS2HeightQueue;
 
 void INS_GetA(float *A,void *para1,void *para2,void *para3);
 void INS_GetH(float *H,void *para1,void *para2);
