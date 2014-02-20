@@ -1,13 +1,13 @@
 #include "flightConTask.h"
 #include "AHRSEKF.h"
 #include "INSEKF.h"
-//#include "sensor.h"
 #include "pwm.h"
 #include "diskTask.h"
 #include "uartTask.h"
 #include "ledTask.h"
 #include "filter.h"
 #include "pidctrler.h"
+#include "heightEKF.h"
 #include <arm_math.h>
 #include <stdio.h>
 
@@ -63,7 +63,7 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt);
 void WriteMotor(OutputType* opt);
 void WaitRCSignal(void);
 
-void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBASE_TYPE pos_data_valid);
+void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosDataType *pdt);
 void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt);
 void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt);
 void HeightLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt);
@@ -101,6 +101,7 @@ void vFlyConTask(void* pvParameters)
 	////feed back from sensor system
 	AHRSDataType adt;
 	PosDataType pdt;	
+	VerticalType vt;
 	FeedBackValType fbvt;
 	
 	//intermediate quantity in controllers
@@ -153,22 +154,15 @@ void vFlyConTask(void* pvParameters)
 		{
 			ControllerUpdate(index);
 		}
-
-		/************* update attitude data *************************/
-		xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
-		/************* update pos data ******************************/
-		xstatus = xQueueReceive(INSToFlightConQueue, &pdt, 0);
 		
 		/************* feed back *************************/
-		FeedBack(&fbvt, &adt, &pdt, xstatus);
+		FeedBack(&fbvt, &adt, &vt, &pdt);
 
 		/************* input handle*************************/
 		InputControl(&odt);
 
 		
-		/************* controllers routing*************************/
-
-		
+		/************* controllers routing*************************/	
 		/****************** position loop **********************/
 		if(pos_loop_cnt++ >= POS_LOOP_DIVIDER)
 		{
@@ -199,45 +193,40 @@ void vFlyConTask(void* pvParameters)
 			}
 		}
 		
-		/****************** velocity loop *********************/
-		if(odt.hover_en == 1)
+		/****************** velocity loop *********************/		
+		if(velo_loop_cnt++ >= VELO_LOOP_DIVIDER)
 		{
-			if(velo_loop_cnt++ >= VELO_LOOP_DIVIDER)
+			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
 			{
-				if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
-				{
-					/* velocity control*/
-					HorVeloLoop(&fbvt, &system_ctrler, 0.005);
-					Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
-						, system_ctrler.velo_y_ctrler.output
-						, &odt
-						, fbvt.yaw_angle);
-					velo_loop_cnt = 0;
-					fbvt.velo_valid &= (~VELO_X_VALID);
-					fbvt.velo_valid &= (~VELO_Y_VALID);
-				}
-				else if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
-				{
-					ResetCtrler(&system_ctrler.velo_x_ctrler);
-					ResetCtrler(&system_ctrler.velo_y_ctrler);
-				}
-				
-				if((fbvt.velo_valid & VELO_Z_VALID)!=0)
-				{
-					HeightVeloLoop(&fbvt, &system_ctrler, 0.005);
-					cpt.thrust_out += system_ctrler.velo_z_ctrler.output; 
-					velo_loop_cnt = 0;
-					fbvt.velo_valid &= (~VELO_Z_VALID);
-				}
-				else if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
-				{
-					ResetCtrler(&system_ctrler.velo_z_ctrler);
-				}
+				/* velocity control*/
+				HorVeloLoop(&fbvt, &system_ctrler, 0.005);
+				Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
+					, system_ctrler.velo_y_ctrler.output
+					, &odt
+					, fbvt.yaw_angle);
+				velo_loop_cnt = 0;
+				fbvt.velo_valid &= (~VELO_X_VALID);
+				fbvt.velo_valid &= (~VELO_Y_VALID);
 			}
-		}
-		else
-		{
-			cpt.thrust_out = odt.thrustOrder;
+			else if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
+			{
+				ResetCtrler(&system_ctrler.velo_x_ctrler);
+				ResetCtrler(&system_ctrler.velo_y_ctrler);
+			}
+			
+			if((fbvt.velo_valid & VELO_Z_VALID)!=0)
+			{
+				HeightVeloLoop(&fbvt, &system_ctrler, 0.005);
+				cpt.thrust_out += system_ctrler.velo_z_ctrler.output; 
+				velo_loop_cnt = 0;
+				fbvt.velo_valid &= (~VELO_Z_VALID);
+			}
+			else 
+			{
+				cpt.thrust_out = odt.thrustOrder;
+				if(velo_loop_cnt >= 2*VELO_LOOP_DIVIDER)
+					ResetCtrler(&system_ctrler.velo_z_ctrler);
+			}
 		}
 		
 		/****************** angle loop ************************/
@@ -736,23 +725,10 @@ void WaitRCSignal(void)
 	}
 }
 
-void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBASE_TYPE pos_data_valid)
+void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosDataType *pdt)
 {
-	if(pos_data_valid == pdPASS)
-	{
-		fbvt->pos_x = pdt->posX;
-		fbvt->pos_y = pdt->posY;
-		fbvt->pos_z = pdt->posZ;
-		fbvt->pos_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
-		
-		fbvt->velo_x = pdt->veloX;
-		fbvt->velo_y = pdt->veloY;
-		fbvt->velo_z = pdt->veloZ;
-		fbvt->velo_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
-		
-		Blinks(LED1,1);
-	}
-	
+	/************* update attitude data *************************/
+	xQueueReceive(AHRSToFlightConQueue,adt,portMAX_DELAY);
 	fbvt->roll_angle = adt->rollAngle;
 	fbvt->pitch_angle = adt->pitchAngle;
 	fbvt->yaw_angle = adt->yawAngle;
@@ -763,6 +739,27 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, PosDataType *pdt, portBA
 	fbvt->pitch_rate = adt->pitchAngleRate;
 	fbvt->yaw_rate = adt->yawAngleRate;
 	fbvt->rate_valid = ROLL_RATE_VALID | PITCH_RATE_VALID | YAW_RATE_VALID;	
+	
+	/************* update height data ****************************/
+	if(pdPASS == xQueueReceive(height2FlightQueue, vt, 0))
+	{
+		fbvt->pos_z = vt->height;
+		fbvt->velo_z = vt->velo_z;
+		fbvt->pos_valid |= POS_Z_VALID;
+		fbvt->velo_valid |= VELO_Z_VALID;
+	}
+	
+	/************* update pos data ******************************/
+	if(pdPASS == xQueueReceive(INSToFlightConQueue, pdt, 0))
+	{
+		fbvt->pos_x = pdt->posX;
+		fbvt->pos_y = pdt->posY;
+		fbvt->pos_valid = POS_Z_VALID | POS_X_VALID | POS_Y_VALID;
+		
+		fbvt->velo_x = pdt->veloX;
+		fbvt->velo_y = pdt->veloY;
+		fbvt->velo_valid |= (POS_X_VALID | POS_Y_VALID);
+	}
 }
 
 void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
