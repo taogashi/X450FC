@@ -9,6 +9,7 @@
 
 xQueueHandle AHRSToFlightConQueue;
 xQueueHandle AHRSToINSQueue;
+xQueueHandle AHRS2HeightQueue;
 
 const float P[16]={1,	0,	0, 0,
 					0,	1,	0, 0,
@@ -50,7 +51,6 @@ void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
 {
-//	char uart_buffer[100];
 	/*index*/
 	u8 i=0;	
 	u8 k;
@@ -64,7 +64,7 @@ void vAEKFProcessTask(void* pvParameters)
 	
 	/*att representation*/
 	float angle[3]={0};
-	float bodyQuat[4]={1,0,0,0};  //؋̬̄Ԫ˽
+	float bodyQuat[4]={1,0,0,0};
 	float Cbn[9];
 
 	/*FIR filter*/
@@ -161,8 +161,6 @@ void vAEKFProcessTask(void* pvParameters)
 		{			
 			float norm;
 			i=0;
-//			sprintf(uart_buffer,"%hd %hd %hd\r\n",sdt.mag[0],sdt.mag[1],sdt.mag[2]);
-//			UartSend(uart_buffer, strlen(uart_buffer));
 
 			/*get measurement*/
 			measure[0]=sdt.acc[0];
@@ -224,6 +222,7 @@ void vAEKFProcessTask(void* pvParameters)
 		{
 			a2it.dt = 0.0;
 		}
+		xQueueSend(AHRS2HeightQueue,&a2it,0);
 
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}
