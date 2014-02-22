@@ -22,12 +22,13 @@ typedef struct
 typedef struct{
 	float q[4];
 	float acc[3];
-	float height;
 	float dt;
+	float height;
 }AHRS2INSType;
 
 extern xQueueHandle AHRSToFlightConQueue;
 extern xQueueHandle AHRSToINSQueue;
+extern xQueueHandle AHRS2HeightQueue;
 
 void MeasureAngle(float *acc,s16 *mag,float *angle,float *refangle,u8 use_ref);//根据加速度和磁场强度计算姿态
 /*
