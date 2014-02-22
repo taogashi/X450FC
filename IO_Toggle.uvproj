@@ -44,7 +44,7 @@
             <NotGenerated>0</NotGenerated>
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
-          <OutputDirectory>..\Object\</OutputDirectory>
+          <OutputDirectory>.\</OutputDirectory>
           <OutputName>skyworksF4</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
@@ -167,7 +167,7 @@
             <Capability>1</Capability>
             <DriverSelection>4099</DriverSelection>
           </Flash1>
-          <bUseTDR>0</bUseTDR>
+          <bUseTDR>1</bUseTDR>
           <Flash2>Segger\JL2CM3.dll</Flash2>
           <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
@@ -444,16 +444,6 @@
               <FilePath>..\User\uartTask.c</FilePath>
             </File>
             <File>
-              <FileName>kalman.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\kalman.c</FilePath>
-            </File>
-            <File>
-              <FileName>axisTrans.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\axisTrans.c</FilePath>
-            </File>
-            <File>
               <FileName>INSEKF.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\INSEKF.c</FilePath>
@@ -464,9 +454,9 @@
               <FilePath>..\User\flightConTask.c</FilePath>
             </File>
             <File>
-              <FileName>filter.c</FileName>
+              <FileName>heightEKF.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\filter.c</FilePath>
+              <FilePath>.\heightEKF.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -677,6 +667,31 @@
               <FileName>arm_sin_f32.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Libraries\CMSIS\DSP_Lib\Source\FastMathFunctions\arm_sin_f32.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>algorithm</GroupName>
+          <Files>
+            <File>
+              <FileName>axisTrans.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\axisTrans.c</FilePath>
+            </File>
+            <File>
+              <FileName>filter.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\filter.c</FilePath>
+            </File>
+            <File>
+              <FileName>pidctrler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\pidctrler.c</FilePath>
+            </File>
+            <File>
+              <FileName>kalman.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\kalman.c</FilePath>
             </File>
           </Files>
         </Group>

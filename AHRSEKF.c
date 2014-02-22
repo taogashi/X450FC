@@ -140,7 +140,7 @@ void vAEKFProcessTask(void* pvParameters)
 		a2it.q[1] = filter->x[1];
 		a2it.q[2] = filter->x[2];
 		a2it.q[3] = filter->x[3];
-		a2it.height = sdt.height;
+		a2it.height = 0.0; //sdt.height;
 		a2it.dt += dt;
 		
 		/*smooth acc and magn data*/
