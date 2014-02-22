@@ -14,14 +14,15 @@
 #include "ultraSonic.h"
 
 /***********************macro definition*************************/
-#define GPS_DELAY_CNT 5
+#define GPS_DELAY_CNT 100
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
+xQueueHandle INS2HeightQueue;
 
 float navParamCur[9];	//current navigation parameters, for flight control
-float navParamK[9]={0,0,0,0,0,0,0.1,-0.3,0};	//k time navigation parameters, for GPS data fusion
-float x[9]={0,0,0,0,0,0,0.1,-0.3,0};	//navigation parameters error in time k
+float navParamK[9]={0, 0, 0, 0, 0, 0, 0, 0, 0};	//k time navigation parameters, for GPS data fusion
+float x[9]={0, 0, 0, 0, 0, 0, 0, 0, 0};	//navigation parameters error in time k
 
 double initPos[3];
 float Ctrans[9];

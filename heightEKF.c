@@ -79,7 +79,7 @@ void vhEKFTask(void* pvParameters)
 						+Cbn[7]*(a2it.acc[1]-acc_bias[1])
 						+Cbn[8]*(a2it.acc[2]-acc_bias[2])
 						+ GRAVITY;
-			GetUltraSonicMeasure(&(measure[0]),RESULT_RESERVE);
+			measure[0] = a2it.height;
 			EKF_update(filter
 						,measure
 						,(void *)NULL
