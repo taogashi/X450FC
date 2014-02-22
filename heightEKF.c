@@ -30,8 +30,8 @@ void height_hFunc(float *hx, void *x, void *para4);
 
 void vhEKFTask(void* pvParameters)
 {
-	char printf_buffer[100];
-	u16 string_len;
+//	char printf_buffer[100];
+//	u16 string_len;
 	
 	u8 i=0;
 	portTickType lastTick;
@@ -85,11 +85,11 @@ void vhEKFTask(void* pvParameters)
 						,(void *)NULL
 						,(void *)(filter->x)
 						,(void *)NULL);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
-									, filter->x[0]
-									, filter->x[1]
-									, filter->x[2]);
-			UartSend(printf_buffer,string_len);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
+//									, filter->x[0]
+//									, filter->x[1]
+//									, filter->x[2]);
+//			UartSend(printf_buffer,string_len);
 		}
 		vt.height = filter->x[0];
 		vt.velo_z = filter->x[1];
