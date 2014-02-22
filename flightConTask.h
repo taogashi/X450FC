@@ -3,25 +3,29 @@
 
 #include "stm32f4xx.h"
 
-#define POS_X_VALID		0x01
-#define POS_Y_VALID		0x02
-#define POS_Z_VALID		0x04
-#define POS_ALL_VALID	0x07
+#define POS_LOOP_DIVIDER	16
+#define VELO_LOOP_DIVIDER	8
+#define ANGLE_LOOP_DIVIDER 	4
 
-#define VELO_X_VALID		0x01
-#define VELO_Y_VALID		0x02
-#define VELO_Z_VALID		0x04
-#define VELO_ALL_VALID		0x07
+#define POS_X_VALID		(u8)0x01
+#define POS_Y_VALID		(u8)0x02
+#define POS_Z_VALID		(u8)0x04
+#define POS_ALL_VALID	(u8)0x07
 
-#define ROLL_ANGLE_VALID 	0x01
-#define PITCH_ANGLE_VALID 	0x02
-#define YAW_ANGLE_VALID		0x04
-#define ANGLE_ALL_VALID		0x07
+#define VELO_X_VALID		(u8)0x01
+#define VELO_Y_VALID		(u8)0x02
+#define VELO_Z_VALID		(u8)0x04
+#define VELO_ALL_VALID		(u8)0x07
 
-#define ROLL_RATE_VALID		0x01
-#define PITCH_RATE_VALID	0x02
-#define YAW_RATE_VALID		0x04
-#define RATE_ALL_VALID		0x07
+#define ROLL_ANGLE_VALID 	(u8)0x01
+#define PITCH_ANGLE_VALID 	(u8)0x02
+#define YAW_ANGLE_VALID		(u8)0x04
+#define ANGLE_ALL_VALID		(u8)0x07
+
+#define ROLL_RATE_VALID		(u8)0x01
+#define PITCH_RATE_VALID	(u8)0x02
+#define YAW_RATE_VALID		(u8)0x04
+#define RATE_ALL_VALID		(u8)0x07
 
 extern const char* PID_FORMAT_IN;
 extern const char* PID_FORMAT_OUT;
@@ -80,6 +84,7 @@ typedef struct{
 	u8 lock_en;
 }OrderType;
 
+//0.0~1.0
 typedef struct{
 	float roll_moment;
 	float pitch_moment;
@@ -89,38 +94,11 @@ typedef struct{
 
 //struct for output command
 typedef struct{
-	s16 motor1_Out;
-	s16 motor2_Out;	
-	s16 motor3_Out;	
-	s16 motor4_Out;	
+	float motor1_Out;
+	float motor2_Out;	
+	float motor3_Out;	
+	float motor4_Out;	
 }OutputType;
-
-typedef struct{
-	float desired;
-	float actual;
-	float err;
-	float prev_err;
-	float deriv;	
-	float integ;
-	float i_limit;
-	float d_limit;
-	float out_limit;
-	
-	float kp;
-	float kd;
-	float ki;
-	float output;
-}PIDCtrlerType;
-
-typedef struct{
-	float in;
-	float fb;
-	float dt;
-	u8 use_ref_diff;
-	float ref_diff;
-	void *deriv_filter;
-	void *err_filter;
-}PIDCtrlerAuxiliaryType;
 
 typedef struct{
 	u8 properties;	//0:normal

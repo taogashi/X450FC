@@ -35,6 +35,7 @@
 #include "flightConTask.h"
 #include "uartTask.h"
 #include "INSEKF.h"
+#include "heightEKF.h"
 
 /** @addtogroup STM32F4-Discovery_Demo
   * @{
@@ -48,6 +49,7 @@
 /* Private functions ---------------------------------------------------------*/
 
 void prvSetupHardware( void );
+void InitAllQueue(void);
 void Delay_ns(u32 n);
 
 /**
@@ -60,42 +62,16 @@ int main(void)
 { 
 	/* initialize hardware... */
 	prvSetupHardware();
-	
-	/*queu to sychronize EXTI and button task*/	
-	xButtonQueueISR = xQueueCreate(3,sizeof(u8));
-
-	/*uart task send the GPS data to other tasks*/
-	xUartGPSQueue = xQueueCreate(1,sizeof(GPSDataType));
-	
-	xUartVisionQueue = xQueueCreate(1,sizeof(VisionDataType));
-	
-	xUartParaQueue = xQueueCreate(1, sizeof(u16));
-	
-	/*uart task send waypoint to flightConTask*/
-	xUartWayPointQueue = xQueueCreate(10,sizeof(WayPointType));
-	/*read sensor data and send to other tasks*/
-	xSenToAhrsQueue = xQueueCreate(1,sizeof(SensorDataType));
-
-	/*AHRS should send data to flight control task to stabilize the att*/
-	AHRSToFlightConQueue = xQueueCreate(1,sizeof(AHRSDataType));
-	/*AHRS should send data to INS task to offer inertial data*/
-	AHRSToINSQueue = xQueueCreate(1,sizeof(AHRS2INSType));
-	/*INS task should send data to flight control task to support the position control*/
-	INSToFlightConQueue = xQueueCreate(1,sizeof(PosDataType));
-
-	/*there are two queues to communicate with the tf card*/
-	/*the first one to read/write basic parameters like PID para, etc.*/
-	xDiskParamQueue = xQueueCreate(1,sizeof(u16));
-	/*the second one to make a data log on the tf card*/
-	xDiskLogQueue = xQueueCreate(1,sizeof(char)*100);
+	InitAllQueue();
 //	/* Start the tasks defined within this file/specific to this demo. */
 	xTaskCreate(vLED1Task, ( signed portCHAR * ) "LED", configMINIMAL_STACK_SIZE, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
 	xTaskCreate(vSenAHRSRead, ( signed portCHAR * ) "AHRSread", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+3, NULL );
 
 	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+1024, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
-//	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
+	xTaskCreate(vhEKFTask, (signed portCHAR *) "height_ekf", configMINIMAL_STACK_SIZE+256, (void *)NULL, tskIDLE_PRIORITY+2, NULL);
+//	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
 
-//	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
+	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
 
 	xTaskCreate(vUartRecTask,(signed portCHAR *)"uart_rec", configMINIMAL_STACK_SIZE+128,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	xTaskCreate(vDiskOperation,(signed portCHAR *)"file", configMINIMAL_STACK_SIZE+4096,(void *)NULL,tskIDLE_PRIORITY+1,NULL);
@@ -166,6 +142,38 @@ static void prvSetupHardware( void )
 	USART1_DMA_IT_Config();
 }
 /*-----------------------------------------------------------*/
+
+void InitAllQueue(void)
+{
+	/*queu to sychronize EXTI and button task*/	
+	xButtonQueueISR = xQueueCreate(3,sizeof(u8));
+
+	
+	xUartGPSQueue = xQueueCreate(1,sizeof(GPSDataType));	//uart task send the GPS data to other tasks
+	xUartVisionQueue = xQueueCreate(1,sizeof(VisionDataType));	//uart task receive the primesense data
+	xUartParaQueue = xQueueCreate(1, sizeof(u16));			//uart task reveive the parameters
+	xUartWayPointQueue = xQueueCreate(5,sizeof(WayPointType));	//uart task send waypoint to flightConTask
+	
+	
+	/*read sensor data and send to other tasks*/
+	xSenToAhrsQueue = xQueueCreate(1,sizeof(SensorDataType));
+
+	
+	AHRSToFlightConQueue = xQueueCreate(1,sizeof(AHRSDataType));	/*AHRS should send data to flight control task to stabilize the att*/
+	AHRSToINSQueue = xQueueCreate(1,sizeof(AHRS2INSType));	/*AHRS should send data to INS task to offer inertial data*/
+	AHRS2HeightQueue = xQueueCreate(1,sizeof(AHRS2INSType));
+	
+	/*INS task should send data to flight control task to support the position control*/
+	INSToFlightConQueue = xQueueCreate(1,sizeof(PosDataType));
+	INS2HeightQueue = xQueueCreate(1,sizeof(float)*3);
+	
+	height2FlightQueue = xQueueCreate(1,sizeof(VerticalType));
+
+	/*there are two queues to communicate with the tf card*/
+	/*the first one to read/write basic parameters like PID para, etc.*/
+	xDiskParamQueue = xQueueCreate(1,sizeof(u16));	/*the second one to make a data log on the tf card*/
+	xDiskLogQueue = xQueueCreate(1,sizeof(char)*100);	
+}
 
 void Delay_ns(u32 n)
 {
