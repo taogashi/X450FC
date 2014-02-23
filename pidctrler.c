@@ -19,7 +19,7 @@ void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
 	{
 		ctrler->integ = ctrler->desired - ctrler->actual;
 		
-		ctrler->err = (ctrler->integ - ctrler->prev_err)/info->dt;
+		ctrler->err = ctrler->integ - ctrler->prev_err;
 		if(info->err_filter != NULL)
 			ctrler->err = GaussianFilter((GFilterType *)(info->err_filter), ctrler->err);
 		ctrler->prev_err = ctrler->integ;
@@ -58,11 +58,6 @@ void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
 	ctrler->output = ctrler->kp * ctrler->err 
 					+ ctrler->ki * ctrler->integ
 					+ ctrler->kd * ctrler->deriv;
-					
-	if(info->pid_type == PID_TYPE_INC)
-	{
-		ctrler->output *= info->dt;
-	}
 	
 	if(ctrler->output > ctrler->out_limit)
 		ctrler->output = ctrler->out_limit;

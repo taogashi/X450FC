@@ -217,7 +217,7 @@ void vFlyConTask(void* pvParameters)
 			if((fbvt.velo_valid & VELO_Z_VALID)!=0)
 			{
 				HeightVeloLoop(&fbvt, &system_ctrler, 0.005);
-				cpt.thrust_out += system_ctrler.velo_z_ctrler.output; 
+				cpt.thrust_out -= system_ctrler.velo_z_ctrler.output; 
 				velo_loop_cnt = 0;
 				fbvt.velo_valid &= (~VELO_Z_VALID);
 			}
@@ -260,7 +260,7 @@ void vFlyConTask(void* pvParameters)
 		OutputControl(&cpt, &opt);
 		
 		/************* drive motor ***********************/
-		if(odt.thrustOrder < 0.05)
+		if(odt.hover_en == 1)
 		{
 			opt.motor1_Out = 0.0;
 			opt.motor2_Out = 0.0;
@@ -307,11 +307,19 @@ void vFlyConTask(void* pvParameters)
 //									, fbvt.pitch_rate*57.3
 //									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-									, opt.motor1_Out
-									, opt.motor2_Out
-									, opt.motor3_Out
-									, opt.motor4_Out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+//									, opt.motor1_Out
+//									, opt.motor2_Out
+//									, opt.motor3_Out
+//									, opt.motor4_Out);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+									, system_ctrler.height_ctrler.desired
+									, system_ctrler.height_ctrler.actual
+									, system_ctrler.height_ctrler.output
+									, system_ctrler.height_ctrler.out_limit
+									, system_ctrler.velo_z_ctrler.desired
+									, system_ctrler.velo_z_ctrler.actual
+									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
@@ -407,7 +415,13 @@ gunzhuan	capture from TIM4_1
 */
 void InputControl(OrderType* odt)
 {
-	odt->thrustOrder = (tim4IC3Width-1500)*0.0125;	//-5m/s ~ 5m/s
+	if(tim4IC3Width > 1400 && tim4IC3Width<1600)
+		odt->thrustOrder = 0.0;
+	else if(tim4IC3Width <= 1400)
+		odt->thrustOrder = (tim4IC3Width-1400)*0.0125;
+	else
+		odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
+		
 	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//֛̣ԉއ̙׈ָ®	 خճ30£/s
 	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0015;	//֛̣ԉއ׈ָ®	 خճ30£
 	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.0015;	//֛̣ԉއ׈ָ® خճ30£
@@ -503,23 +517,23 @@ void ControllerInit(void)
 	system_ctrler.px_ctrler.kp = optional_param_global.loop_pid[3].xPID[0];
 	system_ctrler.px_ctrler.ki = optional_param_global.loop_pid[3].xPID[1];
 	system_ctrler.px_ctrler.kd = optional_param_global.loop_pid[3].xPID[2];
-	system_ctrler.px_ctrler.i_limit = 1.0;
-	system_ctrler.px_ctrler.d_limit = 4.0;
-	system_ctrler.px_ctrler.out_limit = 0.5;
+	system_ctrler.px_ctrler.i_limit = 2.0;
+	system_ctrler.px_ctrler.d_limit = 2.0;
+	system_ctrler.px_ctrler.out_limit = 5.0;
 	
 	system_ctrler.py_ctrler.kp = optional_param_global.loop_pid[3].yPID[0];
 	system_ctrler.py_ctrler.ki = optional_param_global.loop_pid[3].yPID[1];
 	system_ctrler.py_ctrler.kd = optional_param_global.loop_pid[3].yPID[2];
-	system_ctrler.py_ctrler.i_limit = 1.0;
-	system_ctrler.py_ctrler.d_limit = 4.0;
-	system_ctrler.py_ctrler.out_limit = 0.5;
+	system_ctrler.py_ctrler.i_limit = 2.0;
+	system_ctrler.py_ctrler.d_limit = 2.0;
+	system_ctrler.py_ctrler.out_limit = 5.0;
 	
 	system_ctrler.height_ctrler.kp = optional_param_global.loop_pid[3].zPID[0];
 	system_ctrler.height_ctrler.ki = optional_param_global.loop_pid[3].zPID[1];
 	system_ctrler.height_ctrler.kd = optional_param_global.loop_pid[3].zPID[2];
-	system_ctrler.height_ctrler.i_limit = 1.0;
-	system_ctrler.height_ctrler.d_limit = 4.0;
-	system_ctrler.height_ctrler.output = 0.5;
+	system_ctrler.height_ctrler.i_limit = 2.0;
+	system_ctrler.height_ctrler.d_limit = 2.0;
+	system_ctrler.height_ctrler.out_limit = 5.0;
 }
 
 /* index: 
@@ -607,6 +621,11 @@ void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle)
 
 void OutputControl(CtrlProcType *cpt, OutputType* opt)
 {
+	if(cpt->thrust_out < 0.0001)
+		cpt->thrust_out = 0.0001;
+	else if(cpt->thrust_out > 0.998)
+		cpt->thrust_out = 0.998;
+		
 	/*restrict output thrust to guarrentee angle PID allowance*/
 	if(cpt->thrust_out>0.0 && cpt->thrust_out < 0.17)
 	{
@@ -667,30 +686,30 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 /* this function are platform relevant*/
 void WriteMotor(OutputType* opt)
 {
-//	if(opt->motor1_Out < 0.01)
-//		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
-//		
-//	if(opt->motor2_Out < 0.01)
-//		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
-//		
-//	if(opt->motor3_Out < 0.01)
-//		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
-//		
-//	if(opt->motor4_Out < 0.01)
-//		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
+	if(opt->motor1_Out < 0.01)
+		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+		
+	if(opt->motor2_Out < 0.01)
+		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+		
+	if(opt->motor3_Out < 0.01)
+		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+		
+	if(opt->motor4_Out < 0.01)
+		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
 
-	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-	TIM_SetCompare4(TIM3,100);	//youmenOut	
+//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/
@@ -808,7 +827,7 @@ void HeightLoop(FeedBackValType *fbvt, OrderType *odt, WayPointType *wpt, struct
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
 	
-	if(odt->thrustOrder>-0.3 && odt->thrustOrder<0.3)
+	if(odt->thrustOrder>-0.001 && odt->thrustOrder<0.001)
 	{
 		msg2ctrler.in = wpt->height*0.001;
 		msg2ctrler.fb = fbvt->pos_z;
@@ -832,8 +851,8 @@ void HeightVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ct
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
 	
-	msg2ctrler.in = system_ctrler->height_ctrler.output;
-	msg2ctrler.fb = -fbvt->velo_z;
+	msg2ctrler.in = -system_ctrler->height_ctrler.output;
+	msg2ctrler.fb = fbvt->velo_z;
 	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
 	msg2ctrler.err_filter = (void *)&height_lpf;
 	msg2ctrler.deriv_filter = (void *)&dheight_lpf;
