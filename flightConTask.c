@@ -74,8 +74,8 @@ void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, 
 void vFlyConTask(void* pvParameters)
 {
 	//for print
-	char printf_buffer[100];
-	u16 string_len;
+//	char printf_buffer[100];
+//	u16 string_len;
 	u8 CNT=0;
 	
 	u8 pos_loop_cnt = 0;
@@ -307,17 +307,17 @@ void vFlyConTask(void* pvParameters)
 //									, fbvt.pitch_rate*57.3
 //									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-									, opt.motor1_Out
-									, opt.motor2_Out
-									, opt.motor3_Out
-									, opt.motor4_Out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+//									, opt.motor1_Out
+//									, opt.motor2_Out
+//									, opt.motor3_Out
+//									, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
 //									, tim4IC3Width
 //									, tim4IC4Width);
-			UartSend(printf_buffer,string_len);
+//			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}
@@ -667,30 +667,30 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 /* this function are platform relevant*/
 void WriteMotor(OutputType* opt)
 {
-//	if(opt->motor1_Out < 0.01)
-//		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
-//		
-//	if(opt->motor2_Out < 0.01)
-//		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
-//		
-//	if(opt->motor3_Out < 0.01)
-//		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
-//		
-//	if(opt->motor4_Out < 0.01)
-//		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
-//	else
-//		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
+	if(opt->motor1_Out < 0.01)
+		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+		
+	if(opt->motor2_Out < 0.01)
+		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+		
+	if(opt->motor3_Out < 0.01)
+		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+		
+	if(opt->motor4_Out < 0.01)
+		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+	else
+		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
 
-	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-	TIM_SetCompare4(TIM3,100);	//youmenOut	
+//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,100);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/
