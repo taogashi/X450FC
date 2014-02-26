@@ -266,6 +266,11 @@ void vFlyConTask(void* pvParameters)
 			opt.motor2_Out = 0.0;
 			opt.motor3_Out = 0.0;
 			opt.motor4_Out = 0.0;
+			Blinks(LED1, 1);
+		}
+		else
+		{
+			Blinks(LED1, 2);
 		}
 		WriteMotor(&opt);
 
@@ -414,12 +419,14 @@ gunzhuan	capture from TIM4_1
 */
 void InputControl(OrderType* odt)
 {
-	if(tim4IC3Width > 1400 && tim4IC3Width<1600)
+	if(tim4IC3Width > 1450 && tim4IC3Width<1600)
 		odt->thrustOrder = 0.0;
-	else if(tim4IC3Width <= 1400)
-		odt->thrustOrder = (tim4IC3Width-1400)*0.0125;
+	else if(tim4IC3Width <= 1450)
+		odt->thrustOrder = (tim4IC3Width-1450)*0.0125;
 	else
 		odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
+
+//	odt->thrustOrder = (tim4IC3Width-1500)*0.0125;
 		
 	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
 	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0015;	//
@@ -510,7 +517,7 @@ void ControllerInit(void)
 	system_ctrler.velo_z_ctrler.kd = optional_param_global.loop_pid[2].zPID[2];
 	system_ctrler.velo_z_ctrler.i_limit = 0.1;
 	system_ctrler.velo_z_ctrler.d_limit = 0.2;
-	system_ctrler.velo_z_ctrler.out_limit = 0.26;
+	system_ctrler.velo_z_ctrler.out_limit = 0.33;
 	
 	/*pos loop*/
 	system_ctrler.px_ctrler.kp = optional_param_global.loop_pid[3].xPID[0];
