@@ -123,12 +123,6 @@ void vFlyConTask(void* pvParameters)
 	
 	yaw_locked = adt.yawAngle;
 	
-	optional_param_global.RCneutral[0] = 1500;
-	optional_param_global.RCneutral[1] = 1500;
-	optional_param_global.RCneutral[2] = 1100;
-	optional_param_global.RCneutral[3] = 1500;
-	optional_param_global.miscel[0] = 0.46;
-	
 	/****************** parameters read form disk ***********************/
 	LoadParam();
 	
@@ -270,7 +264,7 @@ void vFlyConTask(void* pvParameters)
 		}
 		else
 		{
-			Blinks(LED1,2);
+			Blinks(LED1, 2);
 		}
 		WriteMotor(&opt);
 
@@ -427,8 +421,8 @@ void InputControl(OrderType* odt)
 		odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
 
 	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
-	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0015;	//
-	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.0015;	//
+	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//
+	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//
 	
 	//vertical
 	if(tim5IC2Width > 1500)
@@ -515,7 +509,7 @@ void ControllerInit(void)
 	system_ctrler.velo_z_ctrler.kd = optional_param_global.loop_pid[2].zPID[2];
 	system_ctrler.velo_z_ctrler.i_limit = 0.1;
 	system_ctrler.velo_z_ctrler.d_limit = 0.2;
-	system_ctrler.velo_z_ctrler.out_limit = 0.26;
+	system_ctrler.velo_z_ctrler.out_limit = 0.33;
 	
 	/*pos loop*/
 	system_ctrler.px_ctrler.kp = optional_param_global.loop_pid[3].xPID[0];
