@@ -165,7 +165,6 @@ void InitAllQueue(void)
 	
 	/*INS task should send data to flight control task to support the position control*/
 	INSToFlightConQueue = xQueueCreate(1,sizeof(PosDataType));
-	INS2HeightQueue = xQueueCreate(1,sizeof(float)*3);
 	
 	height2FlightQueue = xQueueCreate(1,sizeof(VerticalType));
 

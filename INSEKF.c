@@ -18,7 +18,6 @@
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
-xQueueHandle INS2HeightQueue;
 
 float navParamCur[9];	//current navigation parameters, for flight control
 float navParamK[9]={0,0,0,0,0,0,0.1,-0.37,-0.01};	//k time navigation parameters, for GPS data fusion

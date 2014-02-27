@@ -52,6 +52,8 @@ GFilterType dpitch_rate_lpf = {{0},10,9};
 GFilterType dyaw_rate_lpf = {{0},10,9};
 GFilterType height_lpf = {{0},10,9};
 GFilterType dheight_lpf = {{0},10,9};
+GFilterType d_velo_x_lpf = {{0.0},10,9};
+GFilterType d_velo_y_lpf = {{0.0},10,9};
 
 /************************************* private function ***************************/
 void LoadParam(void);
@@ -168,8 +170,22 @@ void vFlyConTask(void* pvParameters)
 		{
 			if((fbvt.pos_valid & POS_X_VALID)!=0 && (fbvt.pos_valid & POS_Y_VALID)!=0)
 			{
-				/*position control*/
-				PosLoop(&fbvt, &wpt, &system_ctrler, 0.005);
+				if(odt.lock_en == 1)
+				{
+					/*position control*/
+					PosLoop(&fbvt, &wpt, &system_ctrler, 0.005);
+				}
+				else
+				{
+					wpt.x = (int)(fbvt.pos_x*1000);
+					wpt.y = (int)(fbvt.pos_y*1000);
+					system_ctrler.px_ctrler.integ = 0.0;
+					system_ctrler.px_ctrler.prev_deriv = 0.0;
+					system_ctrler.px_ctrler.prev_err = 0.0;
+					system_ctrler.py_ctrler.integ = 0.0;
+					system_ctrler.py_ctrler.prev_deriv = 0.0;
+					system_ctrler.py_ctrler.prev_err = 0.0;
+				}
 				pos_loop_cnt = 0;
 				fbvt.pos_valid &= (~POS_X_VALID);
 				fbvt.pos_valid &= (~POS_Y_VALID);
@@ -198,12 +214,20 @@ void vFlyConTask(void* pvParameters)
 		{
 			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
 			{
-				/* velocity control*/
-				HorVeloLoop(&fbvt, &system_ctrler, 0.005);
-				Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
-					, system_ctrler.velo_y_ctrler.output
-					, &odt
-					, fbvt.yaw_angle);
+				if(odt.lock_en == 1)
+				{
+					/* velocity control*/
+					HorVeloLoop(&fbvt, &system_ctrler, 0.005);
+					Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
+						, system_ctrler.velo_y_ctrler.output
+						, &odt
+						, fbvt.yaw_angle);
+				}
+				else
+				{
+					ResetCtrler(&system_ctrler.velo_x_ctrler);
+					ResetCtrler(&system_ctrler.velo_y_ctrler);
+				}
 				velo_loop_cnt = 0;
 				fbvt.velo_valid &= (~VELO_X_VALID);
 				fbvt.velo_valid &= (~VELO_Y_VALID);
@@ -790,21 +814,17 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
+	msg2ctrler.pid_type = PID_TYPE_POS;
+	msg2ctrler.err_filter = NULL;
+	msg2ctrler.deriv_filter = NULL;
+	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
 	
 	msg2ctrler.in = wpt->x*0.001;
 	msg2ctrler.fb = fbvt->pos_x;
-	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-
 	PIDProccessing(&(system_ctrler->px_ctrler), &msg2ctrler);
 
 	msg2ctrler.in = wpt->y*0.001;
 	msg2ctrler.fb = fbvt->pos_y;
-	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-
 	PIDProccessing(&(system_ctrler->py_ctrler), &msg2ctrler);
 }
 
@@ -812,20 +832,18 @@ void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrle
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
 	
+	msg2ctrler.pid_type = PID_TYPE_POS;
+	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
+	msg2ctrler.err_filter = NULL;
+	
 	msg2ctrler.in = system_ctrler->px_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_x;
-	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-
+	msg2ctrler.deriv_filter = (void *)&d_velo_x_lpf;
 	PIDProccessing(&(system_ctrler->velo_x_ctrler), &msg2ctrler);
 
 	msg2ctrler.in = system_ctrler->py_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_y;
-	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-
+	msg2ctrler.deriv_filter = (void *)&d_velo_y_lpf;
 	PIDProccessing(&(system_ctrler->velo_y_ctrler), &msg2ctrler);	
 }
 

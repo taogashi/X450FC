@@ -6,6 +6,7 @@ void ResetCtrler(PIDCtrlerType *ctrler)
 {
 	ctrler->integ = 0.0;
 	ctrler->prev_err = 0.0;
+	ctrler->prev_deriv = 0.0;
 	ctrler->output = 0.0;
 }
 
