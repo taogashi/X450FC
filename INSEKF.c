@@ -11,21 +11,17 @@
 #include "axisTrans.h"
 #include "diskTask.h"
 #include "ledTask.h"
-#include "ultraSonic.h"
+#include "gps.h"
 
 /***********************macro definition*************************/
 #define GPS_DELAY_CNT 100
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
-xQueueHandle INS2HeightQueue;
 
 float navParamCur[9];	//current navigation parameters, for flight control
 float navParamK[9]={0, 0, 0, 0, 0, 0, 0, 0, 0};	//k time navigation parameters, for GPS data fusion
 float x[9]={0, 0, 0, 0, 0, 0, 0, 0, 0};	//navigation parameters error in time k
-
-double initPos[3];
-float Ctrans[9];
 
 float IMU_delay_buffer[GPS_DELAY_CNT*8];
 u8 buffer_header=0;
@@ -45,19 +41,21 @@ const float iP[81]={
 const float iQ[81]={
 		 0.0001,0,0,0,0,0,0,0,0
 	    ,0,0.0001,0,0,0,0,0,0,0
-	    ,0,0,0.0001,0,0,0,0,0,0
+	    ,0,0,0.0032,0,0,0,0,0,0
 		,0,0,0,0.0025,0,0,0,0,0
 		,0,0,0,0,0.0025,0,0,0,0
-		,0,0,0,0,0,0.0025,0,0,0
+		,0,0,0,0,0,0.00064,0,0,0
 		,0,0,0,0,0,0,0.000004096,0,0
 		,0,0,0,0,0,0,0,0.000004096,0
-		,0,0,0,0,0,0,0,0,0.000004096
+		,0,0,0,0,0,0,0,0,0.00000049
 };	//used to initialize EKF filter structure
 
-const float iR[9]={
-		 20,0,0
-		,0,20,0
-		,0,0,5
+const float iR[25]={
+		 10, 0, 0, 0, 0
+		,0,  10,0, 0, 0
+		,0,  0, 2.0, 0, 0
+		,0, 0, 0, 0.25, 0
+		,0, 0, 0, 0, 0.25
 };	//used to initialize EKF filter structure
 
 /*
@@ -150,52 +148,22 @@ void vINSAligTask(void* pvParameters)
 {
 	char printf_buffer[100];
 	u16 string_len;
-//	u8 uw_present=0;
 	
 	/*odometry sensor data*/
 	AHRS2INSType a2it;
-//	VisionDataType vdt;
-	u16 vision_validate_cnt=0;
+	
+	GPSDataType gdt;
+
+	u16 gps_validate_cnt=0;
 	
 	float baro_height = 0.0;
-//	VisionDataType vdt;
 	
 	portBASE_TYPE xstatus;
 	
-	/*Enable ultrasonic sensor TIMER*/
-//	TIM2_Config();
-//	TIM2_IT_Config();
-	
-	/**/
 	xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);	//capture an INS frame	 
 
 #ifdef INS_DEBUG	
 	/*GPS data is not needed in debug mode*/
-	while(1)	//
-	{		
-		/*receive ins data and fill the IMU_delay_buffer*/
-		xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);
-		PutToBuffer(&a2it);
-		
-//		uw_present += GetUltraSonicMeasure(&uw_height);
-		if(vision_validate_cnt++ >= 10)
-		{
-			vision_validate_cnt = 0;
-//			string_len = sprintf(printf_buffer, "%.2f\r\n", a2it.height);
-//			UartSend(printf_buffer, string_len);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f\r\n", a2it.acc[0],a2it.acc[1],a2it.acc[2],a2it.height);
-			UartSend(printf_buffer, string_len);
-		}
-//		if(pdPASS == xQueueReceive(xUartVisionQueue, &vdt, 0))
-//		{
-//			if(vision_validate_cnt++ >= 3)
-//			{
-//				vision_validate_cnt = 0;
-//				string_len = sprintf(printf_buffer, "%d %d %d\n",vdt.pos_x,vdt.pos_y,vdt.pos_z);
-//				UartSend(printf_buffer, string_len);
-//			}
-//		}
-	}
 
 	initPos[0] = 0.0;
 	initPos[1] = 0.0;
@@ -226,22 +194,24 @@ void vINSAligTask(void* pvParameters)
 #else
 	//normol mode
 	/*GPS data is not needed in debug mode*/
-	while(vision_validate_cnt++ < 200)	//
+	while(gps_validate_cnt < 20)	//
 	{		
 		/*receive ins data and fill the IMU_delay_buffer*/
 		xQueueReceive(AHRSToINSQueue,&a2it,portMAX_DELAY);
 		PutToBuffer(&a2it);
 		baro_height = 0.98*baro_height + 0.02*a2it.height;
+		
+		if(pdPASS == xQueueReceive(xUartGPSQueue, &gdt, 0))
+		{
+			gps_validate_cnt ++;
+		}
 	}
-	Quat2dcm(Ctrans, a2it.q);
-
-	initPos[0] = 0.0;
-	initPos[1] = 0.0;
-	initPos[2] = baro_height;
+	
+	GPSSetInitPos(&gdt);
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
-	navParamK[2] = 0.0;
+	navParamK[2] = baro_height;
 	navParamK[3] = 0.0;
 	navParamK[4] = 0.0;
 	navParamK[5] = 0.0;
@@ -274,37 +244,31 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
-//	char printf_buffer[100];
-//	u16 string_len;
-	
-	portTickType lastTick; //control update frequency
-	portTickType curTick;
+	char printf_buffer[100];
+	u16 string_len;
 	
 	u8 i;
-	u8 CNT=0;
 	u8 acc_bias_stable = 0;	//indicate whether acc bias is stably estimated
 	
-	ekf_filter filter;	
-	float dt;
-	
-	float measure[3]={0};
+	ekf_filter filter;		
+	float measure[5]={0.0};
 
 	AHRS2INSType cur_a2it;
 	AHRS2INSType k_a2it;
-
-//	VisionDataType vdt={0.0,0.0,0.0};
+	float dt;
 	
+	GPSDataType gdt;
 	PosDataType pdt;	//position message send to flight control task
 
 	/*initial filter*/
-	filter=ekf_filter_new(9,3,(float *)iQ,(float *)iR,INS_GetA,INS_GetH,INS_aFunc,INS_hFunc);
+	filter=ekf_filter_new(9,5,(float *)iQ,(float *)iR,INS_GetA,INS_GetH,INS_aFunc,INS_hFunc);
+	
 	memcpy(filter->x,x,filter->state_dim*sizeof(float));
 	memcpy(filter->P,iP,filter->state_dim*filter->state_dim*sizeof(float));
 
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&cur_a2it,portMAX_DELAY);
 	
-	lastTick = xTaskGetTickCount();
 	for(;;)
 	{
 		/*capture an INS frame*/
@@ -330,36 +294,19 @@ void vIEKFProcessTask(void* pvParameters)
 					, (void *)(&dt)
 					, (void *)(filter->A)
 					, NULL);
-			
-//		xstatus=xQueueReceive(xUartVisionQueue,&vdt,0);	//get measurement data
-		curTick = xTaskGetTickCount();
-		if(curTick - lastTick >= 100)
+
+		if(pdPASS == xQueueReceive(xUartGPSQueue,&gdt,0))
 		{
-			float meas_Err[3]={0.0};
-			measure[0] = 0.0;
-			measure[1] = 0.0;
+			float meas_Err[5]={0.0};
+		
+			GPSGetLocalXY(&gdt, measure, measure+1, measure+3, measure+4, 6.1677);
 			measure[2] = cur_a2it.height;
 			
-			for(i=0;i<3;i++)
+			for(i=0;i<5;i++)
 			{
-				meas_Err[i] = navParamK[i] - measure[i];
+				meas_Err[i] = measure[i] - navParamK[i];
 			}
 			
-			/*data record*/
-			/*uncomment this to record data for matlab simulation*/
-//			sprintf(logData,"%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
-//											insBufferK[0],insBufferK[1],insBufferK[2],
-//											insBufferK[3],insBufferK[4],insBufferK[5],
-//											insBufferK[6],insBufferK[7],
-//											measure[0],measure[1],measure[2],measure[3],measure[4],
-//											navParamK[3],navParamK[4]);
-//			xQueueSend(xDiskLogQueue,logData,0);
-			
-//			sprintf(logData, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
-//							measure[0],measure[1],measure[3],measure[4],
-//							navParamK[0],navParamK[1],navParamK[3],navParamK[4],
-//							navParamCur[0],navParamCur[1],navParamCur[3],navParamCur[4]);
-//			xQueueSend(xDiskLogQueue,logData,0);
 			/*update*/
 			EKF_update(filter
 						, (void *)meas_Err
@@ -367,27 +314,13 @@ void vIEKFProcessTask(void* pvParameters)
 						, NULL
 						, (void *)(filter->x)
 						, NULL);	
-			if(CNT++ >= 8)
-			{
-				CNT = 0;
-//				string_len = sprintf(printf_buffer,"%.2f %.2f %.4f %.4f %.4f\r\n",meas_Err[0],meas_Err[1],filter->x[6],filter->x[7],filter->x[8]);
-//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//							,navParamK[0],navParamK[1],navParamK[2]
-//							,navParamK[3],navParamK[4],navParamK[5]
-//							,navParamK[6],navParamK[7],navParamK[8]);
-//				string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//						,measure[2]
-//						,navParamK[0],navParamK[1],navParamK[2]
-//						,navParamK[3],navParamK[4],navParamK[5]);
-//				UartSend(printf_buffer, string_len);
-			}
 			/*
 			 *correct navParamCur
 			 */
 			if(acc_bias_stable)
 			{
 				for(i=0;i<6;i++)
-					navParamCur[i] -= filter->x[i];
+					navParamCur[i] += filter->x[i];
 				navParamCur[6] = filter->x[6];
 				navParamCur[7] = filter->x[7];
 				navParamCur[8] = filter->x[8];
@@ -397,24 +330,12 @@ void vIEKFProcessTask(void* pvParameters)
 			 *reset error state x*/			
 			for(i=0;i<6;i++)
 			{
-				navParamK[i] -= filter->x[i];
+				navParamK[i] += filter->x[i];
 				filter->x[i] = 0.0;
-			}
-			
+			}			
 			navParamK[6] = filter->x[6];
 			navParamK[7] = filter->x[7];
-			navParamK[8] = filter->x[8];
-			
-			pdt.posX = navParamK[0];
-			pdt.posY = navParamK[1];
-			pdt.posZ = navParamK[2];
-			
-			pdt.veloX = navParamK[3];
-			pdt.veloY = navParamK[4];
-			pdt.veloZ = navParamK[5];
-			
-			/*put to queue*/
-			xQueueSend(INSToFlightConQueue,&pdt,0);			
+			navParamK[8] = filter->x[8];		
 			
 			/*when acc bias stable, 
 			 *calculate current navigation parameters*/
@@ -437,25 +358,32 @@ void vIEKFProcessTask(void* pvParameters)
 					{
 						ReadBufferIndex(&cur_a2it, i+buffer_header);
 					}
-					cur_a2it.acc[0] -= navParamK[6];
-					cur_a2it.acc[1] -= navParamK[7];
-					cur_a2it.acc[2] -= navParamK[8];
+					cur_a2it.acc[0] += navParamK[6];
+					cur_a2it.acc[1] += navParamK[7];
+					cur_a2it.acc[2] += navParamK[8];
 					
 					INS_Update(navParamCur,&cur_a2it);
 				}
-//				Blinks(LED1,1);
 			}
+			
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+								,navParamK[0],navParamK[1],navParamK[2]
+								,navParamK[3],navParamK[4],navParamK[5]
+								,navParamK[6],navParamK[7],navParamK[8]);
+			UartSend(printf_buffer, string_len);
 		}
-		else
+		if(acc_bias_stable == 1)
 		{
-			/*data record*/
-//			sprintf(logData,"%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n",
-//											insBufferK[0],insBufferK[1],insBufferK[2],
-//											insBufferK[3],insBufferK[4],insBufferK[5],
-//											insBufferK[6],insBufferK[7],
-//											0.0,0.0,0.0,0.0,0.0,
-//											navParamK[3],navParamK[4]);
-//			xQueueSend(xDiskLogQueue,logData,0);
+			pdt.posX = navParamCur[0]+filter->x[0];
+			pdt.posY = navParamCur[1]+filter->x[1];
+			pdt.posZ = navParamCur[2]+filter->x[2];
+			
+			pdt.veloX = navParamCur[3]+filter->x[3];
+			pdt.veloY = navParamCur[4]+filter->x[4];
+			pdt.veloZ = navParamCur[5]+filter->x[5];
+			
+			/*put to queue*/
+			xQueueSend(INSToFlightConQueue,&pdt,0);	
 		}
 	}
 }
@@ -469,7 +397,7 @@ void INS_GetA(float *A,void *para1,void *para2,void *para3)
 	memset(A,0,324);
 
 	A[0]=1.0;	A[10]=1.0;	A[20]=1.0;	A[30]=1.0;	A[40]=1.0;	
-	A[50]=1.0;	A[60]=0.998;	A[70]=0.998;	A[80]=1.0;
+	A[50]=1.0;	A[60]=1.0;	A[70]=1.0;	A[80]=1.0;
 
 	A[3]=dt;A[13]=dt;A[23]=-dt;
 	
@@ -481,9 +409,10 @@ void INS_GetA(float *A,void *para1,void *para2,void *para3)
 
 void INS_GetH(float *H,void *para1,void *para2)
 {
-	memset(H,0,108);
+	memset(H,0,180);
 
-	H[0]=1;H[10]=1;H[20]=1;
+	H[0]=1;		H[10]=1;	H[20]=1;
+	H[30]=1; 	H[40]=1;
 }
 
 void INS_aFunc(float *x,void *para4,void *para5)
@@ -522,6 +451,8 @@ void INS_hFunc(float *hx,void *para3,void *para4)
 	hx[0]=x[0];
 	hx[1]=x[1];
 	hx[2]=x[2];
+	hx[3]=x[3];
+	hx[4]=x[4];
 }
 
 void INS_Update(float *navParam, AHRS2INSType *a2it)

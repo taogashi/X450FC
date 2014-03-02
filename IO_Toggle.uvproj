@@ -693,6 +693,11 @@
               <FileType>1</FileType>
               <FilePath>.\kalman.c</FilePath>
             </File>
+            <File>
+              <FileName>gps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\gps.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

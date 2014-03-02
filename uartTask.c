@@ -1,5 +1,6 @@
 #include "uartTask.h"
 #include "UART.h"
+#include "gps.h"
 #include "flightConTask.h"
 #include <string.h>
 #include <stdio.h>
@@ -107,7 +108,7 @@ void USART3_IRQHandler(void)
 		else if(byteRec != '\r' && byteRec!='\n')
 		{	
 			uart3Cache1[byteCNT++]=byteRec;
-			if(byteCNT>=100) byteCNT=0;
+			if(byteCNT>=200) byteCNT=0;
 		}
 		else if(byteCNT != 0)
 		{	
@@ -122,7 +123,7 @@ void USART3_IRQHandler(void)
 
 void vUartRecTask(void* pvParameters)
 {
-	char buffer[100];
+	char buffer[128];
 	char *keyword;
 	u16 string_len;
 	u16 index;
@@ -321,7 +322,7 @@ void vUartRecTask(void* pvParameters)
 		
 		if(uart3Flag==1)
 		{
-			memcpy(buffer,uart3Cache2,100);
+			memcpy(buffer,uart3Cache2,128);
 			uart3Flag=0;
 			if((keyword=strstr(buffer,"GPGGA")) != NULL)
 			{
@@ -410,9 +411,7 @@ void vUartRecTask(void* pvParameters)
 				}
 			}
 		}
-//		sprintf(buffer, "hello world\r\n");
-//		UartSend(buffer, strlen(buffer));
-		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+		vTaskDelay((portTickType)(10/portTICK_RATE_MS));
 	}
 }
 

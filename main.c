@@ -36,6 +36,7 @@
 #include "uartTask.h"
 #include "INSEKF.h"
 #include "heightEKF.h"
+#include "gps.h"
 
 /** @addtogroup STM32F4-Discovery_Demo
   * @{
@@ -69,11 +70,11 @@ int main(void)
 
 	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+1024, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
 	xTaskCreate(vhEKFTask, (signed portCHAR *) "height_ekf", configMINIMAL_STACK_SIZE+256, (void *)NULL, tskIDLE_PRIORITY+2, NULL);
-//	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
+	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
 
 	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+512, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
 
-	xTaskCreate(vUartRecTask,(signed portCHAR *)"uart_rec", configMINIMAL_STACK_SIZE+128,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
+	xTaskCreate(vUartRecTask,(signed portCHAR *)"uart_rec", configMINIMAL_STACK_SIZE+256,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	xTaskCreate(vDiskOperation,(signed portCHAR *)"file", configMINIMAL_STACK_SIZE+4096,(void *)NULL,tskIDLE_PRIORITY+1,NULL);
 	xTaskCreate(vButtonEXTIHandler,(signed portCHAR *)"button", configMINIMAL_STACK_SIZE+32,(void *)NULL,tskIDLE_PRIORITY+2,NULL);
 	/* Start the scheduler. */
@@ -165,7 +166,6 @@ void InitAllQueue(void)
 	
 	/*INS task should send data to flight control task to support the position control*/
 	INSToFlightConQueue = xQueueCreate(1,sizeof(PosDataType));
-	INS2HeightQueue = xQueueCreate(1,sizeof(float)*3);
 	
 	height2FlightQueue = xQueueCreate(1,sizeof(VerticalType));
 

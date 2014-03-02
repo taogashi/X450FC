@@ -30,8 +30,8 @@ void height_hFunc(float *hx, void *x, void *para4);
 
 void vhEKFTask(void* pvParameters)
 {
-//	char printf_buffer[100];
-//	u16 string_len;
+	char printf_buffer[100];
+	u16 string_len;
 	
 	u8 i=0;
 	portTickType lastTick;
@@ -43,6 +43,8 @@ void vhEKFTask(void* pvParameters)
 	float accz;
 	float measure=0.0;//height
 	float dt;
+	
+	float heightParam[3]={0.0, 0.0, 0.0};
 
 	filter = ekf_filter_new(3,1, (float *)hQ, (float *)&hR
 							, height_GetA, height_GetH
@@ -61,23 +63,28 @@ void vhEKFTask(void* pvParameters)
 		dt = (xTaskGetTickCount() - lastTick)*0.0005;
 		lastTick = xTaskGetTickCount();
 		
+		//update height parameters
 		Quat2dcm(Cbn, a2it.q);
 		accz = Cbn[6]*a2it.acc[0]
 						+Cbn[7]*a2it.acc[1]
 						+Cbn[8]*a2it.acc[2]
-						+ GRAVITY;
-						
+						+ GRAVITY;						
+		heightParam[0] -= heightParam[1]*dt;
+		heightParam[1] += accz*dt;
+		
+		//update height err parameters
 		EKF_predict(filter
 					,(void *)(&dt)
 					,(void *)NULL
 					,(void *)NULL
-					,(void *)(&accz)
+					,(void *)NULL
 					,(void *)(&dt));
+					
 		if(i++ >= 10)
 		{
-			
 			i=0;
-			measure = a2it.height;
+			//compute height err measurement
+			measure = a2it.height-heightParam[0];
 
 			EKF_update(filter
 						,&measure
@@ -85,14 +92,22 @@ void vhEKFTask(void* pvParameters)
 						,(void *)NULL
 						,(void *)(filter->x)
 						,(void *)NULL);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
-//									, filter->x[0]
-//									, filter->x[1]
-//									, filter->x[2]);
+			
+			//reset err state
+			heightParam[0] += filter->x[0];
+			heightParam[1] += filter->x[1];
+			heightParam[2] = filter->x[2];
+			
+			filter->x[0] = 0.0;
+			filter->x[1] = 0.0;
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
+									, vt.height
+									, vt.velo_z
+									, filter->x[2]);
 //			UartSend(printf_buffer,string_len);
 		}
-		vt.height = filter->x[0];
-		vt.velo_z = filter->x[1];
+		vt.height = heightParam[0] + filter->x[0];
+		vt.velo_z = heightParam[1] + filter->x[1];
 		
 		xQueueSend(height2FlightQueue, &vt, 0);
 	}
@@ -101,7 +116,7 @@ void vhEKFTask(void* pvParameters)
 void height_GetA(float *A, void *dt, void *para2, void *para3)
 {
 	A[0] = 1.0; A[1] = -*(float *)dt; A[2] = 0.0;
-	A[3] = 0.0; A[4] = 1.0; A[5] = -*(float *)dt;
+	A[3] = 0.0; A[4] = 1.0; A[5] = *(float *)dt;
 	A[6] = 0.0; A[7] = 0.0; A[8] = 1.0;
 }
 
@@ -110,13 +125,12 @@ void height_GetH(float *H, void *para1, void *para2)
 	H[0] = 1.0; 
 }
 
-void height_aFunc(float *x, void *accz, void *dt)
+void height_aFunc(float *x, void *para4, void *dt)
 {
-	float faccz = *(float *)accz;
 	float fdt = *(float *)dt;
 	
 	x[0] -= x[1]*fdt;
-	x[1] += (faccz-x[2])*fdt;
+	x[1] += x[2]*fdt;
 }
 
 void height_hFunc(float *hx, void *x, void *para4)
