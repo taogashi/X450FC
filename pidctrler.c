@@ -6,6 +6,7 @@ void ResetCtrler(PIDCtrlerType *ctrler)
 {
 	ctrler->integ = 0.0;
 	ctrler->prev_err = 0.0;
+	ctrler->prev_deriv = 0.0;
 	ctrler->output = 0.0;
 }
 
@@ -15,11 +16,11 @@ void PIDProccessing(PIDCtrlerType *ctrler, PIDCtrlerAuxiliaryType *info)
 	ctrler->actual = info->fb;
 	
 	/* increment PID */
-	if(info->pid_type_inc == 1)
+	if(info->pid_type == PID_TYPE_INC)
 	{
 		ctrler->integ = ctrler->desired - ctrler->actual;
 		
-		ctrler->err = (ctrler->integ - ctrler->prev_err)/info->dt;
+		ctrler->err = ctrler->integ - ctrler->prev_err;
 		if(info->err_filter != NULL)
 			ctrler->err = GaussianFilter((GFilterType *)(info->err_filter), ctrler->err);
 		ctrler->prev_err = ctrler->integ;

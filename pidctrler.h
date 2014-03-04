@@ -1,6 +1,9 @@
 #ifndef _PIDCTRLER_H_
 #define _PIDCTRLER_H_
 
+#define PID_TYPE_INC 	1
+#define PID_TYPE_POS 	0
+
 typedef struct{
 	float desired;
 	float actual;
@@ -23,7 +26,7 @@ typedef struct{
 	float in;
 	float fb;
 	float dt;
-	unsigned char pid_type_inc;
+	unsigned char pid_type;
 	void *deriv_filter;
 	void *err_filter;
 }PIDCtrlerAuxiliaryType;
