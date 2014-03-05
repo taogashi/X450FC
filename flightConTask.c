@@ -120,22 +120,17 @@ void vFlyConTask(void* pvParameters)
 	portTickType lastTime;
 
 	Blinks(LED1,4);
-	/******************* initialize *************************************/
-	xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
-	
+	/******************* initialize *************************************/	
 	yaw_locked = adt.yawAngle;
-	
-	optional_param_global.RCneutral[0] = 1500;
-	optional_param_global.RCneutral[1] = 1500;
-	optional_param_global.RCneutral[2] = 1100;
-	optional_param_global.RCneutral[3] = 1500;
-	optional_param_global.miscel[0] = 0.46;
 	
 	/****************** parameters read form disk ***********************/
 	LoadParam();
 	
 	/****************** init controllers ************************/
 	ControllerInit();
+	
+	/****************** feedback establish *************************/
+	xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
 	
 	/******************* enable PWM width capture ***************/
 	TIM4_IT_Config();
@@ -353,7 +348,7 @@ void vFlyConTask(void* pvParameters)
 //									, tim4IC2Width
 //									, tim4IC3Width
 //									, tim4IC4Width);
-			UartSend(printf_buffer,string_len);
+//			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}
