@@ -634,23 +634,26 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 	}
 	else if(cpt->thrust_out >= 0.17 && cpt->thrust_out < 0.80)
 	{
-		opt->motor1_Out = cpt->thrust_out + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
-		opt->motor2_Out = cpt->thrust_out + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
-		opt->motor3_Out = cpt->thrust_out - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
-		opt->motor4_Out = cpt->thrust_out - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+//		opt->motor1_Out = cpt->thrust_out + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+//		opt->motor2_Out = cpt->thrust_out + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+//		opt->motor3_Out = cpt->thrust_out - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+//		opt->motor4_Out = cpt->thrust_out - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+		opt->motor1_Out = cpt->thrust_out + cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor2_Out = cpt->thrust_out + cpt->roll_moment + cpt->yaw_moment;
+		opt->motor3_Out = cpt->thrust_out - cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor4_Out = cpt->thrust_out - cpt->roll_moment + cpt->yaw_moment;
 	}
 	else if(cpt->thrust_out >= 0.80)
 	{
-		opt->motor1_Out = 0.80 + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
-		opt->motor2_Out = 0.80 + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
-		opt->motor3_Out = 0.80 - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
-		opt->motor4_Out = 0.80 - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+//		opt->motor1_Out = 0.80 + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
+//		opt->motor2_Out = 0.80 + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
+//		opt->motor3_Out = 0.80 - cpt->roll_moment - cpt->pitch_moment - cpt->yaw_moment;
+//		opt->motor4_Out = 0.80 - cpt->roll_moment + cpt->pitch_moment + cpt->yaw_moment;
+		opt->motor1_Out = 0.80 + cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor2_Out = 0.80 + cpt->roll_moment + cpt->yaw_moment;
+		opt->motor3_Out = 0.80 - cpt->pitch_moment - cpt->yaw_moment;
+		opt->motor4_Out = 0.80 - cpt->roll_moment + cpt->yaw_moment;
 	}
-	
-//	opt->motor1_Out = youmenOut + cpt->pitch_moment - cpt->yaw_moment;
-//	opt->motor2_Out = youmenOut + cpt->roll_moment  + cpt->yaw_moment;
-//	opt->motor3_Out = youmenOut - cpt->pitch_moment - cpt->yaw_moment;
-//	opt->motor4_Out = youmenOut - cpt->roll_moment + cpt->yaw_moment;
 
 	if(opt->motor1_Out<0.1) 
 		opt->motor1_Out=0.1;
@@ -685,24 +688,24 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 void WriteMotor(OutputType* opt)
 {
 	if(opt->motor1_Out < 0.01)
-		TIM_SetCompare1(TIM3, 100);	//youmenOut 	 
+		TIM_SetCompare1(TIM3, 1000);	//youmenOut 	 
 	else
-		TIM_SetCompare1(TIM3, (u16)(200+opt->motor1_Out*1000));
+		TIM_SetCompare1(TIM3, (u16)(1000+opt->motor1_Out*1000));
 		
 	if(opt->motor2_Out < 0.01)
-		TIM_SetCompare2(TIM3, 100);	//youmenOut 	 
+		TIM_SetCompare2(TIM3, 1000);	//youmenOut 	 
 	else
-		TIM_SetCompare2(TIM3, (u16)(200+opt->motor2_Out*1000));
+		TIM_SetCompare2(TIM3, (u16)(1000+opt->motor2_Out*1000));
 		
 	if(opt->motor3_Out < 0.01)
-		TIM_SetCompare3(TIM3, 100);	//youmenOut 	 
+		TIM_SetCompare3(TIM3, 1000);	//youmenOut 	 
 	else
-		TIM_SetCompare3(TIM3, (u16)(200+opt->motor3_Out*1000));
+		TIM_SetCompare3(TIM3, (u16)(1000+opt->motor3_Out*1000));
 		
 	if(opt->motor4_Out < 0.01)
-		TIM_SetCompare4(TIM3, 100);	//youmenOut 	 
+		TIM_SetCompare4(TIM3, 1000);	//youmenOut 	 
 	else
-		TIM_SetCompare4(TIM3, (u16)(200+opt->motor4_Out*1000));
+		TIM_SetCompare4(TIM3, (u16)(1000+opt->motor4_Out*1000));
 
 //	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
 //	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
