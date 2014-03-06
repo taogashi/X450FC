@@ -316,13 +316,13 @@ void vFlyConTask(void* pvParameters)
 //									, system_ctrler.velo_y_ctrler.output);
 //			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\n"
-//						, fbvt.pos_x
-//						, fbvt.pos_y
-//						, fbvt.pos_z
-//						, fbvt.velo_x
-//						, fbvt.velo_y
-//						, fbvt.velo_z);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\n"
+						, fbvt.pos_x
+						, fbvt.pos_y
+						, fbvt.pos_z
+						, fbvt.velo_x
+						, fbvt.velo_y
+						, fbvt.velo_z);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 //									, fbvt.roll_angle*57.3
 //									, fbvt.pitch_angle*57.3
@@ -336,19 +336,19 @@ void vFlyConTask(void* pvParameters)
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-									, system_ctrler.height_ctrler.desired
-									, system_ctrler.height_ctrler.actual
-									, system_ctrler.height_ctrler.output
-									, system_ctrler.velo_z_ctrler.desired
-									, system_ctrler.velo_z_ctrler.actual
-									, cpt.thrust_out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//									, system_ctrler.height_ctrler.desired
+//									, system_ctrler.height_ctrler.actual
+//									, system_ctrler.height_ctrler.output
+//									, system_ctrler.velo_z_ctrler.desired
+//									, system_ctrler.velo_z_ctrler.actual
+//									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
 //									, tim4IC3Width
 //									, tim4IC4Width);
-//			UartSend(printf_buffer,string_len);
+			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}
@@ -831,12 +831,12 @@ void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrle
 	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
 	msg2ctrler.err_filter = NULL;
 	
-	msg2ctrler.in = system_ctrler->px_ctrler.output;
+	msg2ctrler.in = 0.0;//system_ctrler->px_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_x;
 	msg2ctrler.deriv_filter = (void *)&d_velo_x_lpf;
 	PIDProccessing(&(system_ctrler->velo_x_ctrler), &msg2ctrler);
 
-	msg2ctrler.in = system_ctrler->py_ctrler.output;
+	msg2ctrler.in = 0.0;//system_ctrler->py_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_y;
 	msg2ctrler.deriv_filter = (void *)&d_velo_y_lpf;
 	PIDProccessing(&(system_ctrler->velo_y_ctrler), &msg2ctrler);	

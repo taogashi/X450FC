@@ -365,18 +365,7 @@ void vIEKFProcessTask(void* pvParameters)
 			
 			navParamK[6] = filter->x[6];
 			navParamK[7] = filter->x[7];
-			navParamK[8] = filter->x[8];
-			
-			pdt.posX = navParamK[0];
-			pdt.posY = navParamK[1];
-			pdt.posZ = navParamK[2];
-			
-			pdt.veloX = navParamK[3];
-			pdt.veloY = navParamK[4];
-			pdt.veloZ = navParamK[5];
-			
-			/*put to queue*/
-			xQueueSend(INSToFlightConQueue,&pdt,0);			
+			navParamK[8] = filter->x[8];		
 			
 			/*when acc bias stable, 
 			 *calculate current navigation parameters*/
@@ -407,6 +396,16 @@ void vIEKFProcessTask(void* pvParameters)
 				}
 			}
 		}
+		pdt.posX = navParamK[0] - filter->x[0];
+		pdt.posY = navParamK[1] - filter->x[1];
+		pdt.posZ = navParamK[2] - filter->x[2];
+		
+		pdt.veloX = navParamK[3] - filter->x[3];
+		pdt.veloY = navParamK[4] - filter->x[4];
+		pdt.veloZ = navParamK[5] - filter->x[5];
+		
+		/*put to queue*/
+		xQueueSend(INSToFlightConQueue,&pdt,0);	
 	}
 }
 
