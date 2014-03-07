@@ -60,7 +60,10 @@ void vhEKFTask(void* pvParameters)
 	TIM2_IT_Config();
 	
 	xQueueReceive(AHRS2HeightQueue, &a2it, portMAX_DELAY);
-	while(1 != GetUltraSonicMeasure(&measure, RESULT_RESERVE));
+	while(1 != GetUltraSonicMeasure(&measure, RESULT_RESERVE))
+	{
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
+	}
 	filter->x[0] = measure;
 	
 	lastTick = xTaskGetTickCount();
