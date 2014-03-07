@@ -412,12 +412,14 @@ gunzhuan	capture from TIM4_1
 */
 void InputControl(OrderType* odt)
 {
-	if(tim4IC3Width > 1400 && tim4IC3Width<1600)
-		odt->thrustOrder = 0.0;
-	else if(tim4IC3Width <= 1400)
-		odt->thrustOrder = (tim4IC3Width-1400)*0.0125;
-	else
-		odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
+//	if(tim4IC3Width > 1400 && tim4IC3Width<1600)
+//		odt->thrustOrder = 0.0;
+//	else if(tim4IC3Width <= 1400)
+//		odt->thrustOrder = (tim4IC3Width-1400)*0.0125;
+//	else
+//		odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
+
+	odt->thrustOrder = (tim4IC3Width-optional_param_global.RCneutral[2])*0.00125;
 
 	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
 	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//
@@ -435,10 +437,15 @@ void InputControl(OrderType* odt)
 	else
 		odt->lock_en = 1;
 	
-	if(odt->thrustOrder < -5.0)
-		odt->thrustOrder = -5.0;
-	else if(odt->thrustOrder > 5.0)
-		odt->thrustOrder = 5.0;
+//	if(odt->thrustOrder < -5.0)
+//		odt->thrustOrder = -5.0;
+//	else if(odt->thrustOrder > 5.0)
+//		odt->thrustOrder = 5.0;
+
+	if(odt->thrustOrder < 0.0)
+		odt->thrustOrder = 0.0;
+	else if(odt->thrustOrder >1.0)
+		odt->thrustOrder = 1.0;
 }
 
 void ControllerInit(void)
@@ -779,6 +786,9 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
+	
+	fbvt->pos_valid = 0;
+	fbvt->velo_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
@@ -881,6 +891,10 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 	msg2ctrler.fb = fbvt->pitch_angle;
 	
 	PIDProccessing(&(system_ctrler->pitch_ctrler), &msg2ctrler);
+	
+	/*debug*/
+	system_ctrler->roll_ctrler.output = odt->rollOrder;
+	system_ctrler->pitch_ctrler.output = odt->pitchOrder;
 
 	/*yaw loop*/
 	if(odt->yawOrder<0.05 && odt->yawOrder>-0.05)
@@ -905,6 +919,9 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 										+ system_ctrler->yaw_ctrler.ki * system_ctrler->yaw_ctrler.integ
 										+ system_ctrler->yaw_ctrler.kd * system_ctrler->yaw_ctrler.deriv;
 	}	
+	
+	/*debug*/
+	system_ctrler->yaw_ctrler.output = odt->yawOrder;
 }
 
 void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)
