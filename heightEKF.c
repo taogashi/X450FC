@@ -68,17 +68,20 @@ void vhEKFTask(void* pvParameters)
 		accz = Cbn[6]*a2it.acc[0]
 						+Cbn[7]*a2it.acc[1]
 						+Cbn[8]*a2it.acc[2]
-						+ GRAVITY;						
-		heightParam[0] -= heightParam[1]*dt;
-		heightParam[1] += accz*dt;
-		
-		//update height err parameters
-		EKF_predict(filter
-					,(void *)(&dt)
-					,(void *)NULL
-					,(void *)NULL
-					,(void *)NULL
-					,(void *)(&dt));
+						+ GRAVITY;		
+		if(accz > -GRAVITY && accz < GRAVITY)
+		{
+			heightParam[0] -= heightParam[1]*dt;
+			heightParam[1] += accz*dt;
+			
+			//update height err parameters
+			EKF_predict(filter
+						,(void *)(&dt)
+						,(void *)NULL
+						,(void *)NULL
+						,(void *)NULL
+						,(void *)(&dt));
+		}
 					
 		if(i++ >= 10)
 		{

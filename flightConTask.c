@@ -56,6 +56,7 @@ GFilterType dheight_lpf = {{0},10,9};
 /************************************* private function ***************************/
 void LoadParam(void);
 void InputControl(OrderType* odt);
+void SetCtrlMode(OrderType* odt, CtrlModeType mode);
 void ControllerInit(void);
 void ControllerUpdate(u16 index);
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle);
@@ -116,8 +117,11 @@ void vFlyConTask(void* pvParameters)
 	OutputType opt={0.0,0.0,0.0,0.0};
 
 	portTickType lastTime;
+	
+	odt.ctrl_mode = MODE_ANGLE_CTRL; 	//angle control default
 
 	Blinks(LED1,4);
+		
 	/****************** parameters read form disk ***********************/
 	LoadParam();
 	
@@ -153,8 +157,7 @@ void vFlyConTask(void* pvParameters)
 
 		/************* input handle*************************/
 		InputControl(&odt);
-
-		
+	
 		/************* controllers routing*************************/	
 		/****************** position loop **********************/
 		if(pos_loop_cnt++ >= POS_LOOP_DIVIDER)
@@ -227,12 +230,14 @@ void vFlyConTask(void* pvParameters)
 		{
 			if((fbvt.angle_valid & ANGLE_ALL_VALID)!=0)
 			{
+				SetCtrlMode(&odt, MODE_ANGLE_CTRL);
 				AngleLoop(&fbvt, &odt, &yaw_locked, &system_ctrler, 0.005);
 				angle_loop_cnt = 0;
 				fbvt.angle_valid = 0;
 			}
 			else if(angle_loop_cnt >= 2*ANGLE_LOOP_DIVIDER)
 			{
+				SetCtrlMode(&odt, MODE_RATE_CTRL);
 				system_ctrler.roll_ctrler.output = odt.rollOrder;
 				system_ctrler.pitch_ctrler.output = odt.pitchOrder;
 				system_ctrler.yaw_ctrler.output = odt.yawOrder;
@@ -243,6 +248,12 @@ void vFlyConTask(void* pvParameters)
 		if((fbvt.rate_valid & RATE_ALL_VALID)!=0)
 		{
 			RateLoop(&fbvt, &system_ctrler, 0.005);
+		}
+		else
+		{
+			ResetCtrler(&system_ctrler.rollrate_ctrler);
+			ResetCtrler(&system_ctrler.pitchrate_ctrler);
+			ResetCtrler(&system_ctrler.yawrate_ctrler);
 		}
 		
 		cpt.roll_moment = system_ctrler.rollrate_ctrler.output;
@@ -297,26 +308,26 @@ void vFlyConTask(void* pvParameters)
 //						, fbvt.velo_x
 //						, fbvt.velo_y
 //						, fbvt.velo_z);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//									, fbvt.roll_angle*57.3
-//									, fbvt.pitch_angle*57.3
-//									, fbvt.yaw_angle*57.3
-//									, fbvt.roll_rate*57.3
-//									, fbvt.pitch_rate*57.3
-//									, fbvt.yaw_rate*57.3);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+									, fbvt.roll_angle*57.3
+									, fbvt.pitch_angle*57.3
+									, fbvt.yaw_angle*57.3
+									, fbvt.roll_rate*57.3
+									, fbvt.pitch_rate*57.3
+									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
 //									, opt.motor1_Out
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-									, fbvt.pos_z
-									, fbvt.velo_z
-									, system_ctrler.height_ctrler.output
-									, system_ctrler.velo_z_ctrler.desired
-									, system_ctrler.velo_z_ctrler.actual
-									, cpt.thrust_out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//									, fbvt.pos_z
+//									, fbvt.velo_z
+//									, system_ctrler.height_ctrler.output
+//									, system_ctrler.velo_z_ctrler.desired
+//									, system_ctrler.velo_z_ctrler.actual
+//									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
@@ -412,18 +423,49 @@ gunzhuan	capture from TIM4_1
 */
 void InputControl(OrderType* odt)
 {
-//	if(tim4IC3Width > 1400 && tim4IC3Width<1600)
-//		odt->thrustOrder = 0.0;
-//	else if(tim4IC3Width <= 1400)
-//		odt->thrustOrder = (tim4IC3Width-1400)*0.0125;
-//	else
-//		odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
+	if(odt->ctrl_mode == MODE_RATE_CTRL)
+	{
+		odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.004;	//
+		odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.004;	//
+		odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.004;	//
+	}
+	else if(odt->ctrl_mode == MODE_POS_CTRL)
+	{
+		odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
+		odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0125;	//
+		odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.0125;	//
+	}
+	else
+	{
+		odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
+		odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//
+		odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//
+	}
+	
+	if(odt->ctrl_mode == MODE_HEIGHT_CTRL || odt->ctrl_mode == MODE_POS_CTRL)
+	{
+		if(tim4IC3Width > 1400 && tim4IC3Width<1600)
+			odt->thrustOrder = 0.0;
+		else if(tim4IC3Width <= 1400)
+			odt->thrustOrder = (tim4IC3Width-1400)*0.0125;
+		else
+			odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
+			
+		if(odt->thrustOrder < -5.0)
+			odt->thrustOrder = -5.0;
+		else if(odt->thrustOrder > 5.0)
+			odt->thrustOrder = 5.0;
+	}
+	else
+	{
+		odt->thrustOrder = (tim4IC3Width-optional_param_global.RCneutral[2])*0.00125;
+		if(odt->thrustOrder < 0.0)
+			odt->thrustOrder = 0.0;
+		else if(odt->thrustOrder >1.0)
+			odt->thrustOrder = 1.0;
+	}
 
-	odt->thrustOrder = (tim4IC3Width-optional_param_global.RCneutral[2])*0.00125;
-
-	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
-	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//
-	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//
+	
 	
 	//vertical
 	if(tim5IC2Width > 1500)
@@ -436,16 +478,11 @@ void InputControl(OrderType* odt)
 		odt->lock_en = 0;
 	else
 		odt->lock_en = 1;
-	
-//	if(odt->thrustOrder < -5.0)
-//		odt->thrustOrder = -5.0;
-//	else if(odt->thrustOrder > 5.0)
-//		odt->thrustOrder = 5.0;
+}
 
-	if(odt->thrustOrder < 0.0)
-		odt->thrustOrder = 0.0;
-	else if(odt->thrustOrder >1.0)
-		odt->thrustOrder = 1.0;
+void SetCtrlMode(OrderType* odt, CtrlModeType mode)
+{
+	odt->ctrl_mode = mode;
 }
 
 void ControllerInit(void)
@@ -631,7 +668,14 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 		cpt->thrust_out = 0.998;
 		
 	/*restrict output thrust to guarrentee angle PID allowance*/
-	if(cpt->thrust_out>0.0 && cpt->thrust_out < 0.17)
+	if(cpt->thrust_out<0.05)
+	{
+		opt->motor1_Out = 0.0;
+		opt->motor2_Out = 0.0;
+		opt->motor3_Out = 0.0;
+		opt->motor4_Out = 0.0;
+	}
+	else if(cpt->thrust_out>=0.05 && cpt->thrust_out < 0.17)
 	{
 		opt->motor1_Out = cpt->thrust_out;
 		opt->motor2_Out = cpt->thrust_out;
@@ -680,14 +724,6 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 		opt->motor4_Out=0.1;
 	else if(opt->motor4_Out>0.95) 
 		opt->motor4_Out=0.95; 
-	
-	if(cpt->thrust_out<0.05)
-	{
-		opt->motor1_Out = 0.0;
-		opt->motor2_Out = 0.0;
-		opt->motor3_Out = 0.0;
-		opt->motor4_Out = 0.0;
-	}
 }
 
 /* this function are platform relevant*/
@@ -759,7 +795,6 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 	fbvt->pitch_angle = adt->pitchAngle;
 	fbvt->yaw_angle = adt->yawAngle;
 	fbvt->angle_valid = ROLL_ANGLE_VALID | PITCH_ANGLE_VALID | YAW_ANGLE_VALID;
-//		fbvt->angle_valid = 0;
 	
 	fbvt->roll_rate = adt->rollAngleRate;
 	fbvt->pitch_rate = adt->pitchAngleRate;
@@ -787,6 +822,7 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
 	
+	fbvt->angle_valid = 0;
 	fbvt->pos_valid = 0;
 	fbvt->velo_valid = 0;
 }
@@ -892,10 +928,6 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 	
 	PIDProccessing(&(system_ctrler->pitch_ctrler), &msg2ctrler);
 	
-	/*debug*/
-	system_ctrler->roll_ctrler.output = odt->rollOrder;
-	system_ctrler->pitch_ctrler.output = odt->pitchOrder;
-
 	/*yaw loop*/
 	if(odt->yawOrder<0.05 && odt->yawOrder>-0.05)
 	{
@@ -919,9 +951,6 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 										+ system_ctrler->yaw_ctrler.ki * system_ctrler->yaw_ctrler.integ
 										+ system_ctrler->yaw_ctrler.kd * system_ctrler->yaw_ctrler.deriv;
 	}	
-	
-	/*debug*/
-	system_ctrler->yaw_ctrler.output = odt->yawOrder;
 }
 
 void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)

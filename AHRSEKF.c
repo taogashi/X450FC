@@ -202,11 +202,11 @@ void vAEKFProcessTask(void* pvParameters)
 		QuatNormalize(filter->x);
 		Quat2Angle(angle,filter->x);
 
-		/*smooth gyro data*/
-		for(k=0;k<3;k++)
-		{
-			sdt.gyr[k]=GaussianFilter(&(sensorGFT[k]),sdt.gyr[k]);
-		}
+//		/*smooth gyro data*/
+//		for(k=0;k<3;k++)
+//		{
+//			sdt.gyr[k]=GaussianFilter(&(sensorGFT[k]),sdt.gyr[k]);
+//		}
 		
 		/*fill data to flight controll*/
 		acdt.rollAngle = angle[0];

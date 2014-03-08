@@ -62,6 +62,7 @@ void vDiskOperation(void* vParameter)
 	disk_initialize(0);
 	res=f_mount(0, &fs);
 	
+	vTaskDelay((portTickType)(200/portTICK_RATE_MS));
 	//open the parameter file
 	res = f_open(&paraFile,"quad.par",FA_WRITE | FA_READ | FA_OPEN_ALWAYS);
 	if(res != FR_OK)
