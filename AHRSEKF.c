@@ -5,6 +5,7 @@
 #include "axisTrans.h"
 #include "sensor.h"
 #include "filter.h"
+#include "diskTask.h"
 #include <stdio.h>
 
 xQueueHandle AHRSToFlightConQueue;
@@ -51,6 +52,9 @@ void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
 {
+	char log_buffer[100];
+	u16 string_len;
+	
 	/*index*/
 	u8 i=0;	
 	u8 k;
@@ -131,6 +135,12 @@ void vAEKFProcessTask(void* pvParameters)
 	{
 		/*read sensor data*/
 		xQueueReceive(xSenToAhrsQueue, &sdt, portMAX_DELAY);
+		
+		string_len = sprintf(log_buffer,"%.4f %.4f %.4f %.3f %.3f %.3f %d %d %d\r\n"
+							,sdt.gyr[0]*2,sdt.gyr[1],sdt.gyr[2]
+							,sdt.acc[0],sdt.acc[1],sdt.acc[2]
+							,sdt.mag[0],sdt.mag[1],sdt.mag[2]);
+		xQueueSend(xDiskLogQueue, log_buffer, 0);
 	
 		/*fill INS_frame_buffer with un-filtered data*/
 		a2it.acc[0] = sdt.acc[0];
@@ -161,7 +171,7 @@ void vAEKFProcessTask(void* pvParameters)
 		{			
 			float norm;
 			i=0;
-
+			
 			/*get measurement*/
 			measure[0]=sdt.acc[0];
 			measure[1]=sdt.acc[1];
