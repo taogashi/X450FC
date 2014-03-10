@@ -19,10 +19,10 @@ typedef struct
 
 extern xQueueHandle INSToFlightConQueue;
 
-void INS_GetA(float *A,void *para1,void *para2,void *para3);
-void INS_GetH(float *H,void *para1,void *para2);
-void INS_aFunc(float *x,void *para4,void *para5);
-void INS_hFunc(float *hx,void *para3,void *para4);
+void INS_GetA(float *A,void *para1,void *para2,void *para3,void *para4);
+void INS_GetH(float *H,void *para1,void *para2,void *para3,void *para4);
+void INS_aFunc(float *x,void *para1,void *para2,void *para3,void *para4);
+void INS_hFunc(float *hx,void *para1,void *para2,void *para3,void *para4);
 
 void INS_Update(float *navParam, AHRS2INSType *a2it);
 

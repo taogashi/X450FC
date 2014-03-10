@@ -290,10 +290,9 @@ void vIEKFProcessTask(void* pvParameters)
 		/*predict navigation error at time K*/
 		EKF_predict(filter
 					, (void *)(k_a2it.q)
-					, NULL
 					, (void *)(&dt)
 					, (void *)(filter->A)
-					, NULL);
+					, (void *)NULL);
 
 		if(pdPASS == xQueueReceive(xUartGPSQueue,&gdt,0))
 		{
@@ -310,9 +309,9 @@ void vIEKFProcessTask(void* pvParameters)
 			/*update*/
 			EKF_update(filter
 						, (void *)meas_Err
-						, NULL
-						, NULL
 						, (void *)(filter->x)
+						, NULL
+						, NULL
 						, NULL);	
 			/*
 			 *correct navParamCur
@@ -388,10 +387,10 @@ void vIEKFProcessTask(void* pvParameters)
 	}
 }
 
-void INS_GetA(float *A,void *para1,void *para2,void *para3)
+void INS_GetA(float *A,void *para1,void *para2,void *para3,void *para4)
 {
 	float *quaternion = (float *)para1;
-	float dt=*(float *)para3;
+	float dt=*(float *)para2;
 	float Cbn[9]={0.0};
 
 	memset(A,0,324);
@@ -407,17 +406,9 @@ void INS_GetA(float *A,void *para1,void *para2,void *para3)
 	A[51] = Cbn[6]*dt;	A[52] = Cbn[7]*dt;	A[53] = Cbn[8]*dt;
 }
 
-void INS_GetH(float *H,void *para1,void *para2)
+void INS_aFunc(float *x,void *para1,void *para2,void *para3,void *para4)
 {
-	memset(H,0,180);
-
-	H[0]=1;		H[10]=1;	H[20]=1;
-	H[30]=1; 	H[40]=1;
-}
-
-void INS_aFunc(float *x,void *para4,void *para5)
-{
-	float *A=(float *)para4;
+	float *A=(float *)para3;
 	u8 i=0;
 	
 	arm_matrix_instance_f32 AMat;
@@ -444,9 +435,17 @@ void INS_aFunc(float *x,void *para4,void *para5)
 	vPortFree(AxMat.pData);
 }
 
-void INS_hFunc(float *hx,void *para3,void *para4)
+void INS_GetH(float *H,void *para1,void *para2,void *para3,void *para4)
 {
-	float *x = (float *)para3;
+	memset(H,0,180);
+
+	H[0]=1;		H[10]=1;	H[20]=1;
+	H[30]=1; 	H[40]=1;
+}
+
+void INS_hFunc(float *hx,void *para1,void *para2,void *para3,void *para4)
+{
+	float *x = (float *)para1;
 
 	hx[0]=x[0];
 	hx[1]=x[1];

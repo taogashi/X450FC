@@ -18,43 +18,40 @@ const float P[16]={1,	0,	0, 0,
 					0,  0,  0, 1};
 
 const float R[36]={
-	1,  	0,  	0,		0,		0,		0, 
-	0,  	1,  	0,		0,		0,		0,
-	0,  	0,  	1,		0,		0,		0,
-	0,		0,		0,		15,		0,		0,
-	0,		0,		0,		0,		15,		0,
-	0,		0,		0,		0,		0,		15};   //观测噪声协方差阵
+	0.01,  	0,  	0,		0,		0,		0, 
+	0,  	0.01,  	0,		0,		0,		0,
+	0,  	0,  	0.01,	0,		0,		0,
+	0,		0,		0,		0.04,	0,		0,
+	0,		0,		0,		0,		0.04,	0,
+	0,		0,		0,		0,		0,		0.04};   //观测噪声协方差阵
 
 const float Q[16]={
-			0.00001,	0,			0,  		0,
-			0,			0.00001,	0,			0,
-			0,			0,			0.00001,	0,
-			0,    		0,      	0,  		0.00001};
+			0.000004,	0,			0,  		0,
+			0,			0.000004,	0,			0,
+			0,			0,			0.000004,	0,
+			0,    		0,      	0,  		0.000004};
 
 //噪声协方差阵自适应
 void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 {	
 	float totalAcc=sqrt(sdt->acc[0]*sdt->acc[0]+sdt->acc[1]*sdt->acc[1]+sdt->acc[2]*sdt->acc[2]);
-	float gErr=fabs(totalAcc-9.814);
+	float gErr=fabs(totalAcc-9.8015);
 	u8 i;
 	if(gErr<0.4)
 	{
 		for(i=0;i<3;i++)
-			R[i*(measure_dim+1)]=0.2*(1+4/0.4*gErr)+0.8*R[i*(measure_dim+1)];			
+			R[i*(measure_dim+1)]=0.2*(0.01+0.24/0.4*gErr)+0.8*R[i*(measure_dim+1)];			
 	}
 	else
 	{
 		for(i=0;i<3;i++)		
-			R[i*(measure_dim+1)]=0.2*(5+15/9.814*(gErr-0.4))+0.8*R[i*(measure_dim+1)];
+			R[i*(measure_dim+1)]=0.2*(0.25+0.75/9.8015*(gErr-0.4))+0.8*R[i*(measure_dim+1)];
 	}
 }
 
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
-{
-	char log_buffer[100];
-	u16 string_len;
-	
+{	
 	/*index*/
 	u8 i=0;	
 	u8 k;
@@ -72,17 +69,14 @@ void vAEKFProcessTask(void* pvParameters)
 	float Cbn[9];
 
 	/*FIR filter*/
-	GFilterType sensorGFT[9]={
-	{{0},10,9},
-	{{0},10,9},
-	{{0},10,9},
+	GFilterType sensorGFT[6]={
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9}
-	};//gyr[0],gyr[1],gyr[2],acc[0],acc[1],acc[2],mag[0],mag[1],mag[2]
+	};//acc[0],acc[1],acc[2],mag[0],mag[1],mag[2]
 
 	/*kalman filter*/
 	float dt=0.005;
@@ -101,12 +95,11 @@ void vAEKFProcessTask(void* pvParameters)
 		xQueueReceive(xSenToAhrsQueue, &sdt, portMAX_DELAY);
 		for(k=0;k<3;k++)
 		{
-			sdt.gyr[k]=GaussianFilter(&(sensorGFT[k]),sdt.gyr[k]);
-			sdt.acc[k]=GaussianFilter(&(sensorGFT[k+3]),sdt.acc[k]);
-			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+6]),(float)(sdt.mag[k])));
+			sdt.acc[k]=GaussianFilter(&(sensorGFT[k]),sdt.acc[k]);
+			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+3]),(float)(sdt.mag[k])));
 		}
 		i++;
-		vTaskDelay((portTickType)40/portTICK_RATE_MS);
+		vTaskDelay((portTickType)20/portTICK_RATE_MS);
 	}
 	
 	/*initialize attitude*/
@@ -135,12 +128,6 @@ void vAEKFProcessTask(void* pvParameters)
 	{
 		/*read sensor data*/
 		xQueueReceive(xSenToAhrsQueue, &sdt, portMAX_DELAY);
-		
-		string_len = sprintf(log_buffer,"%.4f %.4f %.4f %.3f %.3f %.3f %d %d %d\r\n"
-							,sdt.gyr[0]*2,sdt.gyr[1],sdt.gyr[2]
-							,sdt.acc[0],sdt.acc[1],sdt.acc[2]
-							,sdt.mag[0],sdt.mag[1],sdt.mag[2]);
-		xQueueSend(xDiskLogQueue, log_buffer, 0);
 	
 		/*fill INS_frame_buffer with un-filtered data*/
 		a2it.acc[0] = sdt.acc[0];
@@ -156,8 +143,8 @@ void vAEKFProcessTask(void* pvParameters)
 		/*smooth acc and magn data*/
 		for(k=0;k<3;k++)
 		{
-			sdt.acc[k]=GaussianFilter(&(sensorGFT[k+3]),sdt.acc[k]);
-			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+6]),(float)(sdt.mag[k])));
+			sdt.acc[k]=GaussianFilter(&(sensorGFT[k]),sdt.acc[k]);
+			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+3]),(float)(sdt.mag[k])));
 		}
 			
 		EKF_predict(filter
