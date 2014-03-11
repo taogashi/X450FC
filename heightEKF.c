@@ -23,10 +23,10 @@ const float hQ[9]={
 
 const float hR = 2.0;
 
-void height_GetA(float *A, void *dt, void *para2, void *para3);
-void height_GetH(float *H, void *para1, void *para2);
-void height_aFunc(float *x, void *A, void *para5);
-void height_hFunc(float *hx, void *x, void *para4);
+void height_GetA(float *A, void *para1,void *para2,void *para3,void *para4);
+void height_GetH(float *H, void *para1,void *para2,void *para3,void *para4);
+void height_aFunc(float *x, void *para1,void *para2,void *para3,void *para4);
+void height_hFunc(float *hx, void *para1,void *para2,void *para3,void *para4);
 
 void vhEKFTask(void* pvParameters)
 {
@@ -79,8 +79,7 @@ void vhEKFTask(void* pvParameters)
 						,(void *)(&dt)
 						,(void *)NULL
 						,(void *)NULL
-						,(void *)NULL
-						,(void *)(&dt));
+						,(void *)NULL);
 		}
 					
 		if(i++ >= 10)
@@ -91,9 +90,9 @@ void vhEKFTask(void* pvParameters)
 
 			EKF_update(filter
 						,&measure
-						,(void *)NULL
-						,(void *)NULL
 						,(void *)(filter->x)
+						,(void *)NULL
+						,(void *)NULL
 						,(void *)NULL);
 			
 			//reset err state
@@ -116,27 +115,28 @@ void vhEKFTask(void* pvParameters)
 	}
 }
 
-void height_GetA(float *A, void *dt, void *para2, void *para3)
+void height_GetA(float *A, void *para1,void *para2,void *para3,void *para4)
 {
-	A[0] = 1.0; A[1] = -*(float *)dt; A[2] = 0.0;
-	A[3] = 0.0; A[4] = 1.0; A[5] = *(float *)dt;
+	float dt = *(float *)para1;
+	A[0] = 1.0; A[1] = -dt; A[2] = 0.0;
+	A[3] = 0.0; A[4] = 1.0; A[5] = dt;
 	A[6] = 0.0; A[7] = 0.0; A[8] = 1.0;
 }
 
-void height_GetH(float *H, void *para1, void *para2)
+void height_aFunc(float *x, void *para1, void *para2, void *para3, void *para4)
+{
+	float dt = *(float *)para1;
+	
+	x[0] -= x[1]*dt;
+	x[1] += x[2]*dt;
+}
+
+void height_GetH(float *H, void *para1, void *para2, void *para3, void *para4)
 {
 	H[0] = 1.0; 
 }
 
-void height_aFunc(float *x, void *para4, void *dt)
+void height_hFunc(float *hx, void *para1, void *para2, void *para3, void *para4)
 {
-	float fdt = *(float *)dt;
-	
-	x[0] -= x[1]*fdt;
-	x[1] += x[2]*fdt;
-}
-
-void height_hFunc(float *hx, void *x, void *para4)
-{
-	hx[0] = *(float *)x;
+	hx[0] = *(float *)para1;
 }

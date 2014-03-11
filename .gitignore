@@ -33,3 +33,5 @@
 *.htm
 *.dep
 *.bak
+
+JLinkLog.txt
