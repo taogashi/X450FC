@@ -31,9 +31,6 @@ void height_hFunc(float *hx, void *x, void *para4);
 
 void vhEKFTask(void* pvParameters)
 {
-	char printf_buffer[100];
-	u16 string_len;
-	
 	u8 i=0;
 	portTickType lastTick;
 	AHRS2INSType a2it;
@@ -94,14 +91,11 @@ void vhEKFTask(void* pvParameters)
 					,(void *)NULL
 					,(void *)(&dt));
 					
-		if(1 != GetUltraSonicMeasure(&measure, RESULT_RESERVE))
+		if(1 != GetUltraSonicMeasure(&measure, RESULT_RESERVE) && i++>=10)
 		{
 			float measErr;
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-										, measure
-										, vt.height
-										, vt.velo_z
-										, filter->x[2]);
+			
+			i=0;
 			//compute height err measurement
 			measErr = measure-heightParam[0];
 
@@ -119,11 +113,6 @@ void vhEKFTask(void* pvParameters)
 			
 			filter->x[0] = 0.0;
 			filter->x[1] = 0.0;
-			if(i++ >= 5)
-			{
-				i=0;
-//				UartSend(printf_buffer,string_len);
-			}
 		}
 		vt.height = heightParam[0] + filter->x[0];
 		vt.velo_z = heightParam[1] + filter->x[1];
