@@ -68,17 +68,14 @@ void vAEKFProcessTask(void* pvParameters)
 	float Cbn[9];
 
 	/*FIR filter*/
-	GFilterType sensorGFT[9]={
-	{{0},10,9},
-	{{0},10,9},
-	{{0},10,9},
+	GFilterType sensorGFT[6]={
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9},
 	{{0},10,9}
-	};//gyr[0],gyr[1],gyr[2],acc[0],acc[1],acc[2],mag[0],mag[1],mag[2]
+	};//acc[0],acc[1],acc[2],mag[0],mag[1],mag[2]
 
 	/*kalman filter*/
 	float dt=0.005;
@@ -97,12 +94,11 @@ void vAEKFProcessTask(void* pvParameters)
 		xQueueReceive(xSenToAhrsQueue, &sdt, portMAX_DELAY);
 		for(k=0;k<3;k++)
 		{
-			sdt.gyr[k]=GaussianFilter(&(sensorGFT[k]),sdt.gyr[k]);
-			sdt.acc[k]=GaussianFilter(&(sensorGFT[k+3]),sdt.acc[k]);
-			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+6]),(float)(sdt.mag[k])));
+			sdt.acc[k]=GaussianFilter(&(sensorGFT[k]),sdt.acc[k]);
+			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+3]),(float)(sdt.mag[k])));
 		}
 		i++;
-		vTaskDelay((portTickType)40/portTICK_RATE_MS);
+		vTaskDelay((portTickType)20/portTICK_RATE_MS);
 	}
 	
 	/*initialize attitude*/
@@ -145,8 +141,8 @@ void vAEKFProcessTask(void* pvParameters)
 		/*smooth acc and magn data*/
 		for(k=0;k<3;k++)
 		{
-			sdt.acc[k]=GaussianFilter(&(sensorGFT[k+3]),sdt.acc[k]);
-			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+6]),(float)(sdt.mag[k])));
+			sdt.acc[k]=GaussianFilter(&(sensorGFT[k]),sdt.acc[k]);
+			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+3]),(float)(sdt.mag[k])));
 		}
 			
 		EKF_predict(filter
@@ -200,12 +196,6 @@ void vAEKFProcessTask(void* pvParameters)
 		}		
 		QuatNormalize(filter->x);
 		Quat2Angle(angle,filter->x);
-
-		/*smooth gyro data*/
-		for(k=0;k<3;k++)
-		{
-			sdt.gyr[k]=GaussianFilter(&(sensorGFT[k]),sdt.gyr[k]);
-		}
 		
 		/*fill data to flight controll*/
 		acdt.rollAngle = angle[0];

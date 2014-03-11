@@ -31,17 +31,10 @@ void Angle2Quat(float *quat,float *angle)
 	float cosPsi=arm_cos_f32(angle[2]/2);
 	float sinPsi=arm_sin_f32(angle[2]/2);
 
-//	quat[0]=cosFai*cosTheta*cosPsi+sinFai*sinTheta*sinPsi;
-//	quat[1]=sinFai*cosTheta*cosPsi-cosFai*sinTheta*sinPsi;
-//	quat[2]=cosFai*sinTheta*cosPsi+sinFai*cosTheta*sinPsi;
-//	quat[3]=cosFai*cosTheta*sinPsi-sinFai*sinTheta*cosPsi;
-	
-	/*according to matlab*/
-	quat[0]=cosFai*cosTheta*cosPsi - sinFai*sinTheta*sinPsi;
-	quat[1]=cosFai*sinTheta*sinPsi + sinFai*cosTheta*cosTheta;
-	quat[2]=cosFai*sinTheta*cosPsi - sinFai*cosTheta*sinPsi;
-	quat[3]=cosFai*cosTheta*sinPsi + sinFai*sinTheta*cosPsi;
-	
+	quat[0]=cosFai*cosTheta*cosPsi+sinFai*sinTheta*sinPsi;
+	quat[1]=sinFai*cosTheta*cosPsi-cosFai*sinTheta*sinPsi;
+	quat[2]=cosFai*sinTheta*cosPsi+sinFai*cosTheta*sinPsi;
+	quat[3]=cosFai*cosTheta*sinPsi-sinFai*sinTheta*cosPsi;
 	QuatNormalize(quat);	
 }
 
@@ -61,11 +54,6 @@ void Quat2dcm(float *DCM,float *quat)
 	DCM[0]=a2+b2-c2-d2;	DCM[1]=2*(bc-ad);	DCM[2]=2*(bd+ac);
 	DCM[3]=2*(bc+ad);	DCM[4]=a2-b2+c2-d2;	DCM[5]=2*(cd-ab);
 	DCM[6]=2*(bd-ac);	DCM[7]=2*(cd+ab);	DCM[8]=a2-b2-c2+d2;
-	
-	/*according to matlab*/
-//	DCM[0]=a2+b2-c2-d2;	DCM[1]=2*(bc+ad);	DCM[2]=2*(bd-ac);
-//	DCM[3]=2*(bc-ad);	DCM[4]=a2-b2+c2-d2;	DCM[5]=2*(cd+ab);
-//	DCM[6]=2*(bd+ac);	DCM[7]=2*(cd-ab);	DCM[8]=a2-b2-c2+d2;
 }
 
 void QuatNormalize(float *quat)//ËÄÔªÊý¹éÒ»»¯
@@ -94,23 +82,29 @@ void MeasureAngle(float *acc,s16 *mag,float *angle,float *refangle,u8 use_ref)
 {
 	float totalAcc;
 	float Hx,Hy; 
+	float sinFi,cosFi;
+	float sinTh,cosTh;
+	
+	arm_sqrt_f32(acc[0]*acc[0]+acc[1]*acc[1]+acc[2]*acc[2],&totalAcc);
+	angle[1]=asin(acc[0]/totalAcc);	//¸©Ñö½Ç   
+	angle[0]=atan2(-acc[1],-acc[2]);		//¹ö×ª½Ç
 		 
 	if(use_ref==0)
 	{
-		arm_sqrt_f32(acc[0]*acc[0]+acc[1]*acc[1]+acc[2]*acc[2],&totalAcc);
-		angle[1]=asin(acc[0]/totalAcc);	//¸©Ñö½Ç   
-		angle[0]=atan2(-acc[1],-acc[2]);		//¹ö×ª½Ç	
-		Hx=mag[0]*arm_cos_f32(angle[1])+mag[1]*arm_sin_f32(angle[1])+mag[2]*arm_cos_f32(angle[0])*arm_sin_f32(angle[1]);
-		Hy=mag[1]*arm_cos_f32(angle[0])-mag[2]*arm_sin_f32(angle[0]);
+		sinFi = arm_sin_f32(angle[0]);
+		cosFi = arm_cos_f32(angle[0]);
+		sinTh = arm_sin_f32(angle[1]);
+		cosTh = arm_cos_f32(angle[1]);
 	}
 	else
 	{
-		Hx=mag[0]*arm_cos_f32(refangle[1])+mag[1]*arm_sin_f32(refangle[1])+mag[2]*arm_cos_f32(refangle[0])*arm_sin_f32(refangle[1]);
-		Hy=mag[1]*arm_cos_f32(refangle[0])-mag[2]*arm_sin_f32(refangle[0]);
-		arm_sqrt_f32(acc[0]*acc[0]+acc[1]*acc[1]+acc[2]*acc[2],&totalAcc);
-		angle[1]=asin(acc[0]/totalAcc);	//¸©Ñö½Ç   
-		angle[0]=atan2(-acc[1],-acc[2]);		//¹ö×ª½Ç
+		sinFi = arm_sin_f32(refangle[0]);
+		cosFi = arm_cos_f32(refangle[0]);
+		sinTh = arm_sin_f32(refangle[1]);
+		cosTh = arm_cos_f32(refangle[1]);
 	}
+	Hx=mag[0]*cosTh + mag[1]*sinFi*sinTh + mag[2]*cosFi*sinTh;
+	Hy=mag[1]*cosFi - mag[2]*sinFi;
 
 	if(fabs(Hy)<2)
 	{
@@ -127,8 +121,10 @@ void MeasureAngle(float *acc,s16 *mag,float *angle,float *refangle,u8 use_ref)
 		}
 	}
 
-	angle[2]=angle[2]-0.11461;
-	if(angle[2]<0.0) angle[2] += 2*PI;			//0~2*Pi
+	if(angle[2]<0.0) 
+		angle[2] += 2*PI;			//0~2*Pi
+	else if(angle[2]>2*PI)
+		angle[2] -= 2*PI;
 }
 
 void EularAngleRestrict(float *angle)

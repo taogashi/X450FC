@@ -120,8 +120,6 @@ void vFlyConTask(void* pvParameters)
 	portTickType lastTime;
 
 	Blinks(LED1,4);
-	/******************* initialize *************************************/	
-	yaw_locked = adt.yawAngle;
 	
 	/****************** parameters read form disk ***********************/
 	LoadParam();
@@ -131,6 +129,7 @@ void vFlyConTask(void* pvParameters)
 	
 	/****************** feedback establish *************************/
 	xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
+	yaw_locked = adt.yawAngle;
 	
 	/******************* enable PWM width capture ***************/
 	TIM4_IT_Config();
@@ -316,13 +315,14 @@ void vFlyConTask(void* pvParameters)
 //									, system_ctrler.velo_y_ctrler.output);
 //			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\n"
-						, fbvt.pos_x
-						, fbvt.pos_y
-						, fbvt.pos_z
-						, fbvt.velo_x
-						, fbvt.velo_y
-						, fbvt.velo_z);
+//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f\n"
+//						, fbvt.pos_x
+//						, fbvt.pos_y
+//						, fbvt.pos_z
+//						, fbvt.velo_x
+//						, fbvt.velo_y
+//						, fbvt.velo_z
+//						, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 //									, fbvt.roll_angle*57.3
 //									, fbvt.pitch_angle*57.3
@@ -336,13 +336,13 @@ void vFlyConTask(void* pvParameters)
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//									, system_ctrler.height_ctrler.desired
-//									, system_ctrler.height_ctrler.actual
-//									, system_ctrler.height_ctrler.output
-//									, system_ctrler.velo_z_ctrler.desired
-//									, system_ctrler.velo_z_ctrler.actual
-//									, cpt.thrust_out);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+									, system_ctrler.height_ctrler.desired
+									, system_ctrler.height_ctrler.actual
+									, system_ctrler.height_ctrler.output
+									, system_ctrler.velo_z_ctrler.desired
+									, system_ctrler.velo_z_ctrler.actual
+									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
@@ -397,7 +397,7 @@ void LoadParam(void)
 								,optional_param_global.loop_pid[2].xPID[i],optional_param_global.loop_pid[2].yPID[i],optional_param_global.loop_pid[2].zPID[i]
 								,optional_param_global.loop_pid[3].xPID[i],optional_param_global.loop_pid[3].yPID[i],optional_param_global.loop_pid[3].zPID[i]);
 			UartSend(print_buffer, string_len);
-			vTaskDelay((portTickType)(300/portTICK_RATE_MS));
+			vTaskDelay((portTickType)(200/portTICK_RATE_MS));
 		}
 	}
 	//if fails, read from uart
@@ -652,7 +652,14 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 		cpt->thrust_out = 0.998;
 		
 	/*restrict output thrust to guarrentee angle PID allowance*/
-	if(cpt->thrust_out>0.0 && cpt->thrust_out < 0.17)
+	if(cpt->thrust_out<0.05)
+	{
+		opt->motor1_Out = 0.0;
+		opt->motor2_Out = 0.0;
+		opt->motor3_Out = 0.0;
+		opt->motor4_Out = 0.0;
+	}
+	else if(cpt->thrust_out>=0.05 && cpt->thrust_out < 0.17)
 	{
 		opt->motor1_Out = cpt->thrust_out;
 		opt->motor2_Out = cpt->thrust_out;
@@ -698,14 +705,6 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 		opt->motor4_Out=0.1;
 	else if(opt->motor4_Out>0.95) 
 		opt->motor4_Out=0.95; 
-	
-	if(cpt->thrust_out<0.05)
-	{
-		opt->motor1_Out = 0.0;
-		opt->motor2_Out = 0.0;
-		opt->motor3_Out = 0.0;
-		opt->motor4_Out = 0.0;
-	}
 }
 
 /* this function are platform relevant*/

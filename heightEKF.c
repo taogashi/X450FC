@@ -31,8 +31,8 @@ void height_hFunc(float *hx, void *x, void *para4);
 
 void vhEKFTask(void* pvParameters)
 {
-//	char printf_buffer[100];
-//	u16 string_len;
+	char printf_buffer[100];
+	u16 string_len;
 	
 	u8 i=0;
 	portTickType lastTick;
@@ -59,9 +59,16 @@ void vhEKFTask(void* pvParameters)
 	TIM2_Config();
 	TIM2_IT_Config();
 	
+	/*  */
 	xQueueReceive(AHRS2HeightQueue, &a2it, portMAX_DELAY);
-	while(1 != GetUltraSonicMeasure(&measure, RESULT_RESERVE));
-	filter->x[0] = measure;
+	
+	/*initialize height parameters*/
+	while(1 != GetUltraSonicMeasure(&measure, RESULT_RESERVE))
+	{
+		vTaskDelay((portTickType)40/portTICK_RATE_MS);
+	}
+	
+	heightParam[0] = measure;
 	
 	lastTick = xTaskGetTickCount();
 	for(;;)
@@ -87,15 +94,19 @@ void vhEKFTask(void* pvParameters)
 					,(void *)NULL
 					,(void *)(&dt));
 					
-		if(i++ >= 10)
+		if(1 != GetUltraSonicMeasure(&measure, RESULT_RESERVE))
 		{
-			i=0;
+			float measErr;
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+										, measure
+										, vt.height
+										, vt.velo_z
+										, filter->x[2]);
 			//compute height err measurement
-			GetUltraSonicMeasure(&measure, RESULT_RESERVE);
-			measure = measure-heightParam[0];
+			measErr = measure-heightParam[0];
 
 			EKF_update(filter
-						,&measure
+						,&measErr
 						,(void *)NULL
 						,(void *)NULL
 						,(void *)(filter->x)
@@ -108,11 +119,11 @@ void vhEKFTask(void* pvParameters)
 			
 			filter->x[0] = 0.0;
 			filter->x[1] = 0.0;
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
-//									, vt.height
-//									, vt.velo_z
-//									, filter->x[2]);
-//			UartSend(printf_buffer,string_len);
+			if(i++ >= 5)
+			{
+				i=0;
+//				UartSend(printf_buffer,string_len);
+			}
 		}
 		vt.height = heightParam[0] + filter->x[0];
 		vt.velo_z = heightParam[1] + filter->x[1];

@@ -33,7 +33,7 @@ void TIM2_Config(void) //PWM正脉宽捕获
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_TIM2);
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_TIM2);
 
-	TIM_BaseInitStructure.TIM_Period = 4000; //40ms       //定时器2计时周期   
+	TIM_BaseInitStructure.TIM_Period = 5000; //50ms       //定时器2计时周期   
     TIM_BaseInitStructure.TIM_Prescaler = (uint16_t) ((SystemCoreClock/2) / 100000) - 1; //10us       
     TIM_BaseInitStructure.TIM_ClockDivision = 0;     
     TIM_BaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;    //向上计数
@@ -113,8 +113,11 @@ u8 GetUltraSonicMeasure(float *dist, u8 Clear)
 {
 	if(DataReady == 0)
 		return 0;
-	if(Clear == 1)
-		DataReady = 0;
-	*dist = (float)tim2IC4Width*0.0024293-0.09286;
+	else
+	{
+		if(Clear == 1)
+			DataReady = 0;
+		*dist = (float)tim2IC4Width*0.0024293-0.09286;
+	}
 	return 1;
 }
