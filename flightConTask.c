@@ -313,15 +313,15 @@ void vFlyConTask(void* pvParameters)
 //									, system_ctrler.py_ctrler.output
 //									, system_ctrler.velo_x_ctrler.output
 //									, system_ctrler.velo_y_ctrler.output);
-//			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
-//			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.4f %.4f %.2f %.2f\n"
 						, fbvt.pos_x
 						, fbvt.pos_y
-						, fbvt.pos_z
 						, fbvt.velo_x
 						, fbvt.velo_y
-						, fbvt.velo_z);
+						, system_ctrler.velo_x_ctrler.output
+						, system_ctrler.velo_y_ctrler.output
+						, odt.rollOrder*57.3
+						, odt.pitchOrder*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 //									, fbvt.roll_angle*57.3
 //									, fbvt.pitch_angle*57.3
@@ -445,10 +445,12 @@ void InputControl(OrderType* odt)
 		odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
 
 //	odt->thrustOrder = (tim4IC3Width-1500)*0.0125;
-		
 	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
-	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0015;	//
-	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.0015;	//
+	if(odt->lock_en == 0)
+	{
+		odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//
+		odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//
+	}
 	
 	//vertical
 	if(tim5IC2Width > 1500)
