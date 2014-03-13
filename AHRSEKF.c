@@ -138,7 +138,10 @@ void vAEKFProcessTask(void* pvParameters)
 	{
 		/*read sensor data*/
 		xQueueReceive(xSenToAhrsQueue, &sdt, portMAX_DELAY);
-		sdt.gyr[0] = 2*sdt.gyr[0];
+		string_len = sprintf(print_buffer, "%.5f %.5f %.5f %.3f %.3f %.3f\r\n"
+											, sdt.gyr[0], sdt.gyr[1], sdt.gyr[2]
+											, sdt.acc[0], sdt.acc[1], sdt.acc[2]);
+		xQueueSend(xDiskLogQueue, print_buffer, (portTickType)(5/portTICK_RATE_MS));
 		
 		/*fill INS_frame_buffer with un-filtered data*/
 		a2it.acc[0] = sdt.acc[0];
@@ -209,7 +212,7 @@ void vAEKFProcessTask(void* pvParameters)
 			string_len = sprintf(print_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 											, angle[0]*57.3, angle[1]*57.3, angle[2]*57.3
 											, filter->x[4], filter->x[5], filter->x[6]);
-			UartSend(print_buffer, string_len);
+//			UartSend(print_buffer, string_len);
 		}		
 		QuatNormalize(filter->x);
 		Quat2Angle(angle,filter->x);
