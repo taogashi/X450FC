@@ -113,7 +113,7 @@ void MeasureAngle(float *acc,s16 *mag,float *angle,float *refangle,u8 use_ref)
 	}
 	else
 	{
-		angle[2]=atan(Hx/Hy);
+		angle[2]=atan(Hy/Hx);
 		if(Hy<0) angle[2]+=PI/2;
 		else
 		{
