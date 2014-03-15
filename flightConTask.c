@@ -204,6 +204,12 @@ void vFlyConTask(void* pvParameters)
 			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
 			{
 				HorVeloLoop(&fbvt, &system_ctrler, 0.005);
+				sprintf(printf_buffer, "%.3f %.3f %.3f %.3f\r\n"
+									,system_ctrler.velo_x_ctrler.desired
+									,system_ctrler.velo_y_ctrler.desired
+									,system_ctrler.velo_x_ctrler.actual
+									,system_ctrler.velo_y_ctrler.actual);
+				xQueueSend(xDiskLogQueue, printf_buffer, 0);
 				velo_loop_cnt = 0;
 				fbvt.velo_valid &= (~VELO_X_VALID);
 				fbvt.velo_valid &= (~VELO_Y_VALID);
@@ -803,8 +809,8 @@ void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct sys
 //	msg2ctrler.in = wpt->y*0.001;
 //	msg2ctrler.fb = fbvt->pos_y;
 //	PIDProccessing(&(system_ctrler->py_ctrler), &msg2ctrler);
-	system_ctrler->px_ctrler.output = 2*(odt->pitchOrder*cosPesi - odt->rollOrder*sinPesi);
-	system_ctrler->py_ctrler.output = 2*(odt->pitchOrder*sinPesi + odt->rollOrder*cosPesi);
+	system_ctrler->px_ctrler.output = 2*(-odt->pitchOrder*cosPesi - odt->rollOrder*sinPesi);
+	system_ctrler->py_ctrler.output = 2*(-odt->pitchOrder*sinPesi + odt->rollOrder*cosPesi);
 }
 
 void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)
