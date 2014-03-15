@@ -52,11 +52,12 @@ GFilterType dpitch_rate_lpf = {{0},10,9};
 GFilterType dyaw_rate_lpf = {{0},10,9};
 GFilterType height_lpf = {{0},10,9};
 GFilterType dheight_lpf = {{0},10,9};
+GFilterType d_velo_x_lpf = {{0.0},10,9};
+GFilterType d_velo_y_lpf = {{0.0},10,9};
 
 /************************************* private function ***************************/
 void LoadParam(void);
 void InputControl(OrderType* odt);
-void SetCtrlMode(OrderType* odt, CtrlModeType mode);
 void ControllerInit(void);
 void ControllerUpdate(u16 index);
 void Pos2AngleMixer(float xPID, float yPID, OrderType *odt, float yawAngle);
@@ -65,7 +66,7 @@ void WriteMotor(OutputType* opt);
 void WaitRCSignal(void);
 
 void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosDataType *pdt);
-void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt);
+void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt);
 void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt);
 void HeightLoop(FeedBackValType *fbvt, OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt);
 void HeightVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt);
@@ -117,18 +118,16 @@ void vFlyConTask(void* pvParameters)
 	OutputType opt={0.0,0.0,0.0,0.0};
 
 	portTickType lastTime;
-	
-	odt.ctrl_mode = MODE_ANGLE_CTRL; 	//angle control default
 
 	Blinks(LED1,4);
-		
+	
 	/****************** parameters read form disk ***********************/
 	LoadParam();
 	
 	/****************** init controllers ************************/
 	ControllerInit();
 	
-	/******************* initialize *************************************/
+	/****************** feedback establish *************************/
 	xQueueReceive(AHRSToFlightConQueue,&adt,portMAX_DELAY);
 	yaw_locked = adt.yawAngle;
 	
@@ -164,8 +163,18 @@ void vFlyConTask(void* pvParameters)
 		{
 			if((fbvt.pos_valid & POS_X_VALID)!=0 && (fbvt.pos_valid & POS_Y_VALID)!=0)
 			{
-				/*position control*/
-				PosLoop(&fbvt, &wpt, &system_ctrler, 0.005);
+				if(odt.lock_en == 1)
+				{
+					/*position control*/
+					PosLoop(&fbvt, &odt, &wpt, &system_ctrler, 0.005);
+				}
+				else
+				{
+					wpt.x = (int)(fbvt.pos_x*1000);
+					wpt.y = (int)(fbvt.pos_y*1000);
+					ResetCtrler(&system_ctrler.px_ctrler);
+					ResetCtrler(&system_ctrler.py_ctrler);
+				}
 				pos_loop_cnt = 0;
 				fbvt.pos_valid &= (~POS_X_VALID);
 				fbvt.pos_valid &= (~POS_Y_VALID);
@@ -189,17 +198,12 @@ void vFlyConTask(void* pvParameters)
 			}
 		}
 		
-		/****************** velocity loop *********************/		
+		/****************** velocity loop *********************/
 		if(velo_loop_cnt++ >= VELO_LOOP_DIVIDER)
 		{
 			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
 			{
-				/* velocity control*/
 				HorVeloLoop(&fbvt, &system_ctrler, 0.005);
-				Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
-					, system_ctrler.velo_y_ctrler.output
-					, &odt
-					, fbvt.yaw_angle);
 				velo_loop_cnt = 0;
 				fbvt.velo_valid &= (~VELO_X_VALID);
 				fbvt.velo_valid &= (~VELO_Y_VALID);
@@ -225,19 +229,25 @@ void vFlyConTask(void* pvParameters)
 			}
 		}
 		
+		if(odt.lock_en == 1)
+		{
+			Pos2AngleMixer(system_ctrler.velo_x_ctrler.output
+				, system_ctrler.velo_y_ctrler.output
+				, &odt
+				, fbvt.yaw_angle);
+		}
+		
 		/****************** angle loop ************************/
 		if(angle_loop_cnt++ >= ANGLE_LOOP_DIVIDER)
 		{
 			if((fbvt.angle_valid & ANGLE_ALL_VALID)!=0)
 			{
-				SetCtrlMode(&odt, MODE_ANGLE_CTRL);
 				AngleLoop(&fbvt, &odt, &yaw_locked, &system_ctrler, 0.005);
 				angle_loop_cnt = 0;
 				fbvt.angle_valid = 0;
 			}
 			else if(angle_loop_cnt >= 2*ANGLE_LOOP_DIVIDER)
 			{
-				SetCtrlMode(&odt, MODE_RATE_CTRL);
 				system_ctrler.roll_ctrler.output = odt.rollOrder;
 				system_ctrler.pitch_ctrler.output = odt.pitchOrder;
 				system_ctrler.yaw_ctrler.output = odt.yawOrder;
@@ -248,12 +258,6 @@ void vFlyConTask(void* pvParameters)
 		if((fbvt.rate_valid & RATE_ALL_VALID)!=0)
 		{
 			RateLoop(&fbvt, &system_ctrler, 0.005);
-		}
-		else
-		{
-			ResetCtrler(&system_ctrler.rollrate_ctrler);
-			ResetCtrler(&system_ctrler.pitchrate_ctrler);
-			ResetCtrler(&system_ctrler.yawrate_ctrler);
 		}
 		
 		cpt.roll_moment = system_ctrler.rollrate_ctrler.output;
@@ -299,22 +303,21 @@ void vFlyConTask(void* pvParameters)
 //									, system_ctrler.py_ctrler.output
 //									, system_ctrler.velo_x_ctrler.output
 //									, system_ctrler.velo_y_ctrler.output);
-//			sprintf(printf_buffer,"%d %d %d %d\r\n",opt.motor1_Out, opt.motor2_Out, opt.motor3_Out, opt.motor4_Out);
-//			string_len = sprintf(printf_buffer, "%.2f %.2f\r\n", adt.pitchAngle*57.3, adt.pitchAngleRate*57.3);
-//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\n"
-//						, fbvt.pos_x
-//						, fbvt.pos_y
-//						, fbvt.pos_z
-//						, fbvt.velo_x
-//						, fbvt.velo_y
-//						, fbvt.velo_z);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-									, fbvt.roll_angle*57.3
-									, fbvt.pitch_angle*57.3
-									, fbvt.yaw_angle*57.3
-									, fbvt.roll_rate*57.3
-									, fbvt.pitch_rate*57.3
-									, fbvt.yaw_rate*57.3);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f\n"
+						, system_ctrler.px_ctrler.output
+						, system_ctrler.py_ctrler.output
+						, system_ctrler.velo_x_ctrler.output
+						, system_ctrler.velo_y_ctrler.output
+						, odt.rollOrder*57.3
+						, odt.pitchOrder*57.3
+						, cpt.thrust_out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//									, fbvt.roll_angle*57.3
+//									, fbvt.pitch_angle*57.3
+//									, fbvt.yaw_angle*57.3
+//									, fbvt.roll_rate*57.3
+//									, fbvt.pitch_rate*57.3
+//									, fbvt.yaw_rate*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
 //									, opt.motor1_Out
@@ -322,8 +325,8 @@ void vFlyConTask(void* pvParameters)
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//									, fbvt.pos_z
-//									, fbvt.velo_z
+//									, system_ctrler.height_ctrler.desired
+//									, system_ctrler.height_ctrler.actual
 //									, system_ctrler.height_ctrler.output
 //									, system_ctrler.velo_z_ctrler.desired
 //									, system_ctrler.velo_z_ctrler.actual
@@ -382,7 +385,7 @@ void LoadParam(void)
 								,optional_param_global.loop_pid[2].xPID[i],optional_param_global.loop_pid[2].yPID[i],optional_param_global.loop_pid[2].zPID[i]
 								,optional_param_global.loop_pid[3].xPID[i],optional_param_global.loop_pid[3].yPID[i],optional_param_global.loop_pid[3].zPID[i]);
 			UartSend(print_buffer, string_len);
-			vTaskDelay((portTickType)(300/portTICK_RATE_MS));
+			vTaskDelay((portTickType)(200/portTICK_RATE_MS));
 		}
 	}
 	//if fails, read from uart
@@ -416,56 +419,17 @@ void LoadParam(void)
 
 /*
 note:
-youmen 	capture from TIM4_3
+youmen 		capture from TIM4_3
 pianhang 	capture from TIM4_4
 fuyang		capture from TIM4_2
 gunzhuan	capture from TIM4_1
 */
 void InputControl(OrderType* odt)
 {
-	if(odt->ctrl_mode == MODE_RATE_CTRL)
-	{
-		odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.004;	//
-		odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.004;	//
-		odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.004;	//
-	}
-	else if(odt->ctrl_mode == MODE_POS_CTRL)
-	{
-		odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
-		odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.0125;	//
-		odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.0125;	//
-	}
-	else
-	{
-		odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
-		odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//
-		odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//
-	}
-	
-	if(odt->ctrl_mode == MODE_HEIGHT_CTRL || odt->ctrl_mode == MODE_POS_CTRL)
-	{
-		if(tim4IC3Width > 1400 && tim4IC3Width<1600)
-			odt->thrustOrder = 0.0;
-		else if(tim4IC3Width <= 1400)
-			odt->thrustOrder = (tim4IC3Width-1400)*0.0125;
-		else
-			odt->thrustOrder = (tim4IC3Width-1600)*0.0125;
-			
-		if(odt->thrustOrder < -5.0)
-			odt->thrustOrder = -5.0;
-		else if(odt->thrustOrder > 5.0)
-			odt->thrustOrder = 5.0;
-	}
-	else
-	{
-		odt->thrustOrder = (tim4IC3Width-optional_param_global.RCneutral[2])*0.00125;
-		if(odt->thrustOrder < 0.0)
-			odt->thrustOrder = 0.0;
-		else if(odt->thrustOrder >1.0)
-			odt->thrustOrder = 1.0;
-	}
-
-	
+	odt->thrustOrder = (tim4IC3Width-optional_param_global.RCneutral[2])*0.00125;
+	odt->yawOrder=(tim4IC4Width-optional_param_global.RCneutral[3])*0.003;	//
+	odt->pitchOrder=(tim4IC2Width-optional_param_global.RCneutral[1])*0.002;	//
+	odt->rollOrder=(tim4IC1Width-optional_param_global.RCneutral[0])*0.002;	//
 	
 	//vertical
 	if(tim5IC2Width > 1500)
@@ -478,11 +442,11 @@ void InputControl(OrderType* odt)
 		odt->lock_en = 0;
 	else
 		odt->lock_en = 1;
-}
-
-void SetCtrlMode(OrderType* odt, CtrlModeType mode)
-{
-	odt->ctrl_mode = mode;
+	
+	if(odt->thrustOrder < 0.0)
+		odt->thrustOrder = 0.0;
+	else if(odt->thrustOrder > 1.0)
+		odt->thrustOrder = 1.0;
 }
 
 void ControllerInit(void)
@@ -705,24 +669,16 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 		opt->motor4_Out = 0.80 - cpt->roll_moment + cpt->yaw_moment;
 	}
 
-	if(opt->motor1_Out<0.1) 
-		opt->motor1_Out=0.1;
-	else if(opt->motor1_Out>0.95) 
+	if(opt->motor1_Out>0.95) 
 		opt->motor1_Out=0.95; 
 		
-	if(opt->motor2_Out<0.1) 
-		opt->motor2_Out=0.1;
-	else if(opt->motor2_Out>0.95) 
+	if(opt->motor2_Out>0.95) 
 		opt->motor2_Out=0.95; 
 		
-	if(opt->motor3_Out<0.1) 
-		opt->motor3_Out=0.1;
-	else if(opt->motor3_Out>0.95) 
+	if(opt->motor3_Out>0.95) 
 		opt->motor3_Out=0.95; 
 		
-	if(opt->motor4_Out<0.1) 
-		opt->motor4_Out=0.1;
-	else if(opt->motor4_Out>0.95) 
+	if(opt->motor4_Out>0.95) 
 		opt->motor4_Out=0.95; 
 }
 
@@ -821,51 +777,49 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
-	
-	fbvt->angle_valid = 0;
 	fbvt->pos_valid = 0;
 	fbvt->velo_valid = 0;
 }
 
-void PosLoop(FeedBackValType *fbvt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
+void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
 {
-	PIDCtrlerAuxiliaryType msg2ctrler;
+//	PIDCtrlerAuxiliaryType msg2ctrler;
+	float sinPesi = arm_sin_f32(fbvt->yaw_angle);
+	float cosPesi = arm_cos_f32(fbvt->yaw_angle);
 	
-	msg2ctrler.in = wpt->x*0.001;
-	msg2ctrler.fb = fbvt->pos_x;
-	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
+//	msg2ctrler.pid_type = PID_TYPE_POS;
+//	msg2ctrler.err_filter = NULL;
+//	msg2ctrler.deriv_filter = NULL;
+//	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
+	
+//	if(
+//	msg2ctrler.in = wpt->x*0.001;
+//	msg2ctrler.fb = fbvt->pos_x;
+//	PIDProccessing(&(system_ctrler->px_ctrler), &msg2ctrler);
 
-	PIDProccessing(&(system_ctrler->px_ctrler), &msg2ctrler);
-
-	msg2ctrler.in = wpt->y*0.001;
-	msg2ctrler.fb = fbvt->pos_y;
-	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-
-	PIDProccessing(&(system_ctrler->py_ctrler), &msg2ctrler);
+//	msg2ctrler.in = wpt->y*0.001;
+//	msg2ctrler.fb = fbvt->pos_y;
+//	PIDProccessing(&(system_ctrler->py_ctrler), &msg2ctrler);
+	system_ctrler->px_ctrler.output = 2*(odt->pitchOrder*cosPesi - odt->rollOrder*sinPesi);
+	system_ctrler->py_ctrler.output = 2*(odt->pitchOrder*sinPesi + odt->rollOrder*cosPesi);
 }
 
 void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
 	
+	msg2ctrler.pid_type = PID_TYPE_POS;
+	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
+	msg2ctrler.err_filter = NULL;
+	
 	msg2ctrler.in = system_ctrler->px_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_x;
-	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-
+	msg2ctrler.deriv_filter = (void *)&d_velo_x_lpf;
 	PIDProccessing(&(system_ctrler->velo_x_ctrler), &msg2ctrler);
 
 	msg2ctrler.in = system_ctrler->py_ctrler.output;
 	msg2ctrler.fb = fbvt->velo_y;
-	msg2ctrler.dt = dt * VELO_LOOP_DIVIDER;
-	msg2ctrler.deriv_filter = NULL;
-	msg2ctrler.err_filter = NULL;
-
+	msg2ctrler.deriv_filter = (void *)&d_velo_y_lpf;
 	PIDProccessing(&(system_ctrler->velo_y_ctrler), &msg2ctrler);	
 }
 
@@ -873,7 +827,7 @@ void HeightLoop(FeedBackValType *fbvt, OrderType *odt, WayPointType *wpt, struct
 {
 	PIDCtrlerAuxiliaryType msg2ctrler;
 	
-	if(odt->thrustOrder>-0.001 && odt->thrustOrder<0.001)
+	if(odt->thrustOrder>0.4 && odt->thrustOrder<0.6)
 	{
 		msg2ctrler.in = wpt->height*0.001;
 		msg2ctrler.fb = fbvt->pos_z;
@@ -889,7 +843,11 @@ void HeightLoop(FeedBackValType *fbvt, OrderType *odt, WayPointType *wpt, struct
 		wpt->height = (int)(fbvt->pos_z*1000);
 		system_ctrler->height_ctrler.prev_err = 0.0;
 		system_ctrler->height_ctrler.deriv = 0.0;
-		system_ctrler->height_ctrler.output = odt->thrustOrder;
+		
+		if(odt->thrustOrder <= 0.4)
+			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.4)*10;
+		else
+			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.6)*10;
 	}
 }
 
@@ -927,7 +885,7 @@ void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct
 	msg2ctrler.fb = fbvt->pitch_angle;
 	
 	PIDProccessing(&(system_ctrler->pitch_ctrler), &msg2ctrler);
-	
+
 	/*yaw loop*/
 	if(odt->yawOrder<0.05 && odt->yawOrder>-0.05)
 	{

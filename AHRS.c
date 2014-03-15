@@ -90,15 +90,19 @@ void Delay_us(__IO uint32_t nCount)
 u8 ReadAHRSRaw(SensorDataType* sd)
 {	
 	u8 i;
+#if USE_AHRS_ATT_FRAME
+	AttComType acmt;
+#else
 	ComType cmt;
-
+#endif
+	
 	s32 CheckSum=0;
 	u8 ret=0;
 
 #ifndef AHRS_SPI_INT_MODE
 	static u8 j=0;
 	u8 bbstatus=0;
-	u8 byteToRead = 30;//sizeof(ComType);
+	u8 byteToRead = AHRS_FRAME_LEN+2;//sizeof(ComType);
 	
 	AHRS_SPI_CS_LOW();
 	Delay_us(5);
@@ -126,7 +130,19 @@ u8 ReadAHRSRaw(SensorDataType* sd)
 	if(frame_captured == 0)
 		return 0;
 #endif
-   	
+
+#if USE_AHRS_ATT_FRAME
+	acmt = *(AttComType *)spi_byte_buffer;
+	for(i=0; i<10; i++) CheckSum += acmt.data[i];
+	if(CheckSum == acmt.Check && CheckSum != 0)
+	{
+		for(i=0;i<4;i++) sd->quaternion[i]=acmt.data[i]*0.00025;
+		for(i=0;i<3;i++) sd->gyr[i]=acmt.data[i+4]*0.00025;
+		for(i=0;i<3;i++) sd->acc[i]=acmt.data[i+7]*0.001;
+		sd->height = acmt.height;
+		ret = 1;
+	}
+#else
 	cmt=*(ComType *)spi_byte_buffer;
 	for(i=0;i<9;i++) CheckSum+=cmt.data[i];
 	if(CheckSum == cmt.Check && CheckSum != 0)
@@ -137,6 +153,7 @@ u8 ReadAHRSRaw(SensorDataType* sd)
 		sd->height = cmt.height;
 		ret = 1;
 	}
+#endif
 	
 #ifdef AHRS_SPI_INT_MODE
 	frame_captured = 0;
@@ -145,68 +162,6 @@ u8 ReadAHRSRaw(SensorDataType* sd)
 	SPI_I2S_ITConfig(AHRS_SPI, SPI_I2S_IT_RXNE, ENABLE);
 #endif
 	return ret;
-}
-
-u8 ReadAHRSAtt(AttDataType* att_data)
-{
-	u8 i;
-	AttComType act;
-	u8 byteBuffer[50];
-	u8 byteToRead=sizeof(AttComType);
-	s32 CheckSum=0;
-
-	AHRS_SPI_CS_LOW();
-	Delay_us(80);
-	AHRS_SPI_SendByte(0xa9);
-	Delay_us(200);
-	for(i=0;i<byteToRead;i++)
-	{
-	   byteBuffer[i]=AHRS_SPI_ReadByte();
-	   Delay_us(4);
-	}
-	AHRS_SPI_CS_HIGH();	
-   	
-	act = *(AttComType *)byteBuffer;
-	for(i=0;i<7;i++) CheckSum+=act.data[i];
-	if(CheckSum == act.Check && CheckSum!=0)
-	{
-	 	for(i=0;i<4;i++) att_data->quaternion[i]=act.data[i]*0.00025;
-		for(i=0;i<3;i++) att_data->gyr[i]=act.data[i+3]*0.00025;
-		return 1;
-	}
-	
-	return 0;	
-}
-
-
-u8 ReadBaroHeight(float *height)
-{
-	u8 i;
-	BaroHeightType bht;
-	u8 byteBuffer[50];
-	u8 byteToRead=sizeof(BaroHeightType);
-	u8 CheckSum=0;
-	
-	AHRS_SPI_CS_LOW();
-	Delay_us(80);
-	AHRS_SPI_SendByte(0x32);
-	Delay_us(200);
-	for(i=0;i<byteToRead;i++)
-	{
-		byteBuffer[i]=AHRS_SPI_ReadByte();
-		Delay_us(4);		
-	}
-	AHRS_SPI_CS_HIGH();
-
-	bht=*(BaroHeightType *)byteBuffer;
-	CheckSum = *(u8 *)(&(bht.baroheight))+*((u8 *)(&(bht.baroheight))+1);
-	if(CheckSum == bht.check && CheckSum!=0)
-	{
-	 	*height=bht.baroheight/100.0;
-		return 1;
-	}
-
-	return 0;
 }
 
 void AHRS_IRQHandler(void)
@@ -236,58 +191,6 @@ void AHRS_IRQHandler(void)
 		}
 		SPI_I2S_SendData(AHRS_SPI, Dummy_Byte);
 		spi_com_stage++;
-//		if(spi_com_stage == 0)
-//		{
-//			SPI_I2S_ReceiveData(AHRS_SPI);
-//			Delay_us(40);
-//		}
-//		else if(spi_com_stage<AHRS_FRAME_LEN)
-//		{
-//			spi_byte_buffer[spi_com_stage-1] = SPI_I2S_ReceiveData(AHRS_SPI);
-//		}
-//		else
-//		{
-//			spi_byte_buffer[spi_com_stage-1] = SPI_I2S_ReceiveData(AHRS_SPI);
-//			SPI_I2S_ITConfig(AHRS_SPI, SPI_I2S_IT_RXNE, DISABLE);
-//			AHRS_SPI_CS_HIGH();
-//			spi_com_stage = 0;
-//			frame_captured = 1;
-//			return;
-//		}
-
-//		SPI_I2S_SendData(AHRS_SPI, Dummy_Byte);
-//		spi_com_stage++;
 	}
 }
-
-//u8 ReadBaroHeight(float *height)
-//{
-//	u8 i;
-//	baroComType bCT;
-//	u8 byteToRead=sizeof(baroComType);
-//	s16 CheckSum=0;
-//	
-//	AHRS_SPI_CS_LOW();
-//	Delay_us(330);
-//	AHRS_SPI_SendByte(0x32);
-//	Delay_us(20);
-//	for(i=0;i<byteToRead;i++)
-//	{
-//		byteBuffer[i]=AHRS_SPI_ReadByte();
-//		Delay_us(4);		
-//	}
-//	AHRS_SPI_CS_HIGH();
-//
-//	bCT=*(baroComType *)byteBuffer;
-//	CheckSum = *(u8 *)(&(bCT.height))+*((u8 *)(&(bCT.height))+1);
-//	if(CheckSum == bCT.Check && CheckSum!=0)
-//	{
-//	 	*height=bCT.height/100.0;
-//		if(fabs(*height - baroGFT.pool[(baroGFT.head+1)%baroGFT.length])<3)
-//		*height = GaussianFilter(&baroGFT,*height);
-//		return 1;
-//	}
-//
-//	return 0;
-//}
 

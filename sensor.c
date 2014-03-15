@@ -23,7 +23,7 @@ void vSenAHRSRead(void* pvParameters)
 	for(;;)
 	{
 		//ahrs data capture in 250Hz(4ms one period)
-		xstatus = xQueueSend(xSenToAhrsQueue,&localSDT,(portTickType)(3/portTICK_RATE_MS));
+		xstatus = xQueueSend(xSenToAhrsQueue,&localSDT,(portTickType)(4/portTICK_RATE_MS));
 		//队列满，采集新数据并加权滤波
 		while(xstatus != pdPASS)
 		{
@@ -37,7 +37,11 @@ void vSenAHRSRead(void* pvParameters)
 				localSDT.acc[i]=0.4*localSDT.acc[i]+0.6*sdt.acc[i];
 				localSDT.mag[i]=0.4*localSDT.mag[i]+0.6*sdt.mag[i];
 			}
-			xstatus = xQueueSend(xSenToAhrsQueue,&localSDT,(portTickType)(3/portTICK_RATE_MS));
+			for(i=0; i<4; i++)
+			{
+				localSDT.quaternion[i] = sdt.quaternion[i];
+			}
+			xstatus = xQueueSend(xSenToAhrsQueue,&localSDT,(portTickType)(4/portTICK_RATE_MS));
 		}
 		//程序设计10ms循环一次
 //		RTOS_ENTER_CRITICAL();

@@ -3,17 +3,18 @@
 
 #include "HAL_AHRS.h"
 
-#define AHRS_FRAME_LEN 24
+#define AHRS_FRAME_LEN 28
+#define USE_AHRS_ATT_FRAME 1
 
 #define AHRS_SPI_CS_LOW() GPIO_ResetBits(GPIOB, GPIO_Pin_12)
 #define AHRS_SPI_CS_HIGH() GPIO_SetBits(GPIOB, GPIO_Pin_12)
-
 
 typedef struct
 {
 	float gyr[3];
 	float acc[3];
 	s16	  mag[3];
+	float quaternion[4];
 	float height;
 }SensorDataType;
 
@@ -29,7 +30,8 @@ typedef struct{
 }AttDataType;
 
 typedef struct{
-	s16 data[7];
+	s16 data[10];
+	float height;
 	s32 Check;
 }AttComType;
 
@@ -44,8 +46,6 @@ u8 AHRS_SPI_ReadByte(void);
 void Delay_us(__IO uint32_t nCount);
 
 u8 ReadAHRSRaw(SensorDataType* sd);
-u8 ReadAHRSAtt(AttDataType* att_data);
-u8 ReadBaroHeight(float *height);
 
 #endif
 

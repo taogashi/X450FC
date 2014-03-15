@@ -73,18 +73,12 @@ typedef struct{
 	u8 rate_valid;
 }FeedBackValType;
 
-typedef enum{
-	MODE_RATE_CTRL, MODE_ANGLE_CTRL, MODE_HEIGHT_CTRL, MODE_POS_CTRL
-}CtrlModeType;
-
 //struct for input order
 typedef struct{
 	float thrustOrder;
 	float rollOrder;
 	float pitchOrder;
 	float yawOrder;
-	
-	CtrlModeType ctrl_mode;
 	
 	u8 hover_en;
 	u8 lock_en;

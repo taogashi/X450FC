@@ -58,79 +58,25 @@ void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
 {	
-	char print_buffer[100];
-	u16 string_len;
+//	char print_buffer[100];
+//	u16 string_len;
 	
-	/*index*/
-	u8 i=0;	
-	u8 k;
-
+	u8 i;
+	
 	/*sensor data*/
 	SensorDataType sdt;
-
-	/*geomagn info*/
-	float m0[3]={0.0};
-	float mag_norm;
 	
 	/*att representation*/
 	float angle[3]={0};
-	float bodyQuat[4]={1,0,0,0};
-	float Cbn[9];
-
-	/*FIR filter*/
-	GFilterType sensorGFT[6]={
-	{{0},10,9},
-	{{0},10,9},
-	{{0},10,9},
-	{{0},10,9},
-	{{0},10,9},
-	{{0},10,9}
-	};//acc[0],acc[1],acc[2],mag[0],mag[1],mag[2]
 
 	/*kalman filter*/
 	float dt=0.005;
-	ekf_filter filter;
-	float measure[6]={0};
-	
+
 	/*result*/
 	AHRSDataType acdt;
 	AHRS2INSType a2it;
 	
 	portTickType lastTime;
-	
-	//initialize FIR filter
-	while(i<50)
-	{
-		xQueueReceive(xSenToAhrsQueue, &sdt, portMAX_DELAY);
-		for(k=0;k<3;k++)
-		{
-			sdt.acc[k]=GaussianFilter(&(sensorGFT[k]),sdt.acc[k]);
-			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+3]),(float)(sdt.mag[k])));
-		}
-		i++;
-		vTaskDelay((portTickType)20/portTICK_RATE_MS);
-	}
-	
-	/*initialize attitude*/
-	MeasureAngle(sdt.acc,sdt.mag,angle,angle,0);
-	Angle2Quat(bodyQuat,angle);
-	Quat2dcm(Cbn,bodyQuat);
-	
-	/*initialize geomagn info*/	
-	m0[0] = Cbn[0]*sdt.mag[0] + Cbn[1]*sdt.mag[1] + Cbn[2]*sdt.mag[2];
-	m0[1] = Cbn[3]*sdt.mag[0] + Cbn[4]*sdt.mag[1] + Cbn[5]*sdt.mag[2];
-	m0[2] = Cbn[6]*sdt.mag[0] + Cbn[7]*sdt.mag[1] + Cbn[8]*sdt.mag[2];
-	arm_sqrt_f32(m0[0]*m0[0]+m0[1]*m0[1],&(m0[0]));
-	m0[1]=0.0;		
-	arm_sqrt_f32(m0[0]*m0[0]+m0[2]*m0[2],&mag_norm);
-	m0[0] /= mag_norm;
-	m0[2] /= mag_norm;
-	
-	/*initialize kalman filter*/
-	filter=ekf_filter_new(7,6,Q,R,AHRS_GetA,AHRS_GetH,AHRS_aFunc,AHRS_hFunc);
-	filter->x[0] = bodyQuat[0];	filter->x[1] = bodyQuat[1];	filter->x[2] = bodyQuat[2];	filter->x[3] = bodyQuat[3];
-	filter->x[4] = 1.0;	filter->x[5] = 1.0;	filter->x[6] = 1.0;
-	memcpy(filter->P,P,filter->state_dim*filter->state_dim*sizeof(float));
 	
 	lastTime = xTaskGetTickCount();
 	/*filter loop*/
@@ -138,84 +84,27 @@ void vAEKFProcessTask(void* pvParameters)
 	{
 		/*read sensor data*/
 		xQueueReceive(xSenToAhrsQueue, &sdt, portMAX_DELAY);
-		string_len = sprintf(print_buffer, "%.5f %.5f %.5f %.3f %.3f %.3f\r\n"
-											, sdt.gyr[0], sdt.gyr[1], sdt.gyr[2]
-											, sdt.acc[0], sdt.acc[1], sdt.acc[2]);
-		xQueueSend(xDiskLogQueue, print_buffer, (portTickType)(5/portTICK_RATE_MS));
 		
 		/*fill INS_frame_buffer with un-filtered data*/
 		a2it.acc[0] = sdt.acc[0];
 		a2it.acc[1] = sdt.acc[1];
 		a2it.acc[2] = sdt.acc[2];
-		a2it.q[0] = filter->x[0];
-		a2it.q[1] = filter->x[1];
-		a2it.q[2] = filter->x[2];
-		a2it.q[3] = filter->x[3];
+		a2it.q[0] = sdt.quaternion[0];
+		a2it.q[1] = sdt.quaternion[1];
+		a2it.q[2] = sdt.quaternion[2];
+		a2it.q[3] = sdt.quaternion[3];
 		a2it.height = sdt.height;
 		a2it.dt += dt;
-		
-		/*smooth acc and magn data*/
-		for(k=0;k<3;k++)
-		{
-			sdt.acc[k]=GaussianFilter(&(sensorGFT[k]),sdt.acc[k]);
-			sdt.mag[k]=(s16)(GaussianFilter(&(sensorGFT[k+3]),(float)(sdt.mag[k])));
-		}
-			
-		EKF_predict(filter
-					,(void *)(filter->x)
-					,(void *)(sdt.gyr)
-					,(void *)(&dt)
-					,(void *)NULL);
-					
+							
 		if(i++>=20)
 		{			
-			float norm;
 			i=0;
 			
-			/*get measurement*/
-			measure[0]=sdt.acc[0];
-			measure[1]=sdt.acc[1];
-			measure[2]=sdt.acc[2];
-			measure[3]=sdt.mag[0];
-			measure[4]=sdt.mag[1];
-			measure[5]=sdt.mag[2];
-
-			//normalize
-			arm_sqrt_f32(measure[0]*measure[0]+measure[1]*measure[1]+measure[2]*measure[2],&norm);
-			measure[0] /= norm;
-			measure[1] /= norm;
-			measure[2] /= norm;
-
-			arm_sqrt_f32(measure[3]*measure[3]+measure[4]*measure[4]+measure[5]*measure[5],&norm);
-			measure[3] /= norm;
-			measure[4] /= norm;
-			measure[5] /= norm;
-
-			/*matrix R auto adaptive*/
-			SetR(&sdt,filter->R,filter->measure_dim);
-			
-			EKF_update(filter
-					,measure
-					,(void *)(filter->x)
-					,(void *)m0
-					,(void *)NULL
-					,(void *)NULL);
-
-			//calculate m0, method from paper
-			Quat2dcm(Cbn,filter->x);
-			m0[0] = Cbn[0]*measure[3]+Cbn[1]*measure[4]+Cbn[2]*measure[5];
-			m0[1] = Cbn[3]*measure[3]+Cbn[4]*measure[4]+Cbn[5]*measure[5];
-			m0[2] = Cbn[6]*measure[3]+Cbn[7]*measure[4]+Cbn[8]*measure[5];
-			arm_sqrt_f32(m0[0]*m0[0]+m0[1]*m0[1],&(m0[0]));
-			m0[1]=0.0;
-			
-			string_len = sprintf(print_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-											, angle[0]*57.3, angle[1]*57.3, angle[2]*57.3
-											, filter->x[4], filter->x[5], filter->x[6]);
+//			string_len = sprintf(print_buffer, "%.2f %.2f %.2f\r\n"
+//											,angle[0]*57.3, angle[1]*57.3, angle[2]*57.3);
 //			UartSend(print_buffer, string_len);
-		}		
-		QuatNormalize(filter->x);
-		Quat2Angle(angle,filter->x);
+		}
+		Quat2Angle(angle,sdt.quaternion);
 		
 		/*fill data to flight controll*/
 		acdt.rollAngle = angle[0];
