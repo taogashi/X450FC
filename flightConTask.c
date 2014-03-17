@@ -303,21 +303,22 @@ void vFlyConTask(void* pvParameters)
 //									, system_ctrler.py_ctrler.output
 //									, system_ctrler.velo_x_ctrler.output
 //									, system_ctrler.velo_y_ctrler.output);
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f\n"
-						, system_ctrler.px_ctrler.output
-						, system_ctrler.py_ctrler.output
-						, system_ctrler.velo_x_ctrler.output
-						, system_ctrler.velo_y_ctrler.output
-						, odt.rollOrder*57.3
-						, odt.pitchOrder*57.3
-						, cpt.thrust_out);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//									, fbvt.roll_angle*57.3
-//									, fbvt.pitch_angle*57.3
-//									, fbvt.yaw_angle*57.3
-//									, fbvt.roll_rate*57.3
-//									, fbvt.pitch_rate*57.3
-//									, fbvt.yaw_rate*57.3);
+//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f\n"
+//						, system_ctrler.px_ctrler.output
+//						, system_ctrler.py_ctrler.output
+//						, system_ctrler.velo_x_ctrler.output
+//						, system_ctrler.velo_y_ctrler.output
+//						, odt.rollOrder*57.3
+//						, odt.pitchOrder*57.3
+//						, cpt.thrust_out);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+									, fbvt.roll_angle*57.3
+									, fbvt.pitch_angle*57.3
+									, fbvt.yaw_angle*57.3
+									, fbvt.roll_rate*57.3
+									, fbvt.pitch_rate*57.3
+									, fbvt.yaw_rate*57.3
+									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
 //									, opt.motor1_Out
@@ -336,7 +337,7 @@ void vFlyConTask(void* pvParameters)
 //									, tim4IC2Width
 //									, tim4IC3Width
 //									, tim4IC4Width);
-			UartSend(printf_buffer,string_len);
+//			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}

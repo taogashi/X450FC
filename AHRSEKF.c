@@ -58,8 +58,8 @@ void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
 {	
-//	char print_buffer[100];
-//	u16 string_len;
+	char print_buffer[100];
+	u16 string_len;
 	
 	u8 i;
 	
@@ -96,13 +96,14 @@ void vAEKFProcessTask(void* pvParameters)
 		a2it.height = sdt.height;
 		a2it.dt += dt;
 							
-		if(i++>=20)
+		if(i++>=40)
 		{			
 			i=0;
 			
-//			string_len = sprintf(print_buffer, "%.2f %.2f %.2f\r\n"
-//											,angle[0]*57.3, angle[1]*57.3, angle[2]*57.3);
-//			UartSend(print_buffer, string_len);
+			string_len = sprintf(print_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+											,angle[0]*57.3, angle[1]*57.3, angle[2]*57.3
+											,sdt.acc[0],sdt.acc[1],sdt.acc[2]);
+			UartSend(print_buffer, string_len);
 		}
 		Quat2Angle(angle,sdt.quaternion);
 		
