@@ -204,12 +204,12 @@ void vFlyConTask(void* pvParameters)
 			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
 			{
 				HorVeloLoop(&fbvt, &system_ctrler, 0.005);
-				sprintf(printf_buffer, "%.3f %.3f %.3f %.3f\r\n"
-									,system_ctrler.velo_x_ctrler.desired
-									,system_ctrler.velo_y_ctrler.desired
-									,system_ctrler.velo_x_ctrler.actual
-									,system_ctrler.velo_y_ctrler.actual);
-				xQueueSend(xDiskLogQueue, printf_buffer, 0);
+//				sprintf(printf_buffer, "%.3f %.3f %.3f %.3f\r\n"
+//									,system_ctrler.velo_x_ctrler.desired
+//									,system_ctrler.velo_y_ctrler.desired
+//									,system_ctrler.velo_x_ctrler.actual
+//									,system_ctrler.velo_y_ctrler.actual);
+//				xQueueSend(xDiskLogQueue, printf_buffer, 0);
 				velo_loop_cnt = 0;
 				fbvt.velo_valid &= (~VELO_X_VALID);
 				fbvt.velo_valid &= (~VELO_Y_VALID);
@@ -289,7 +289,7 @@ void vFlyConTask(void* pvParameters)
 		WriteMotor(&opt);
 
 		/************ print message **********************/
-		if(CNT++>=30)
+		if(CNT++>=20)
 		{
 			CNT=0;
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
@@ -311,11 +311,11 @@ void vFlyConTask(void* pvParameters)
 //									, system_ctrler.velo_y_ctrler.output);
 			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f\n"
 						, system_ctrler.px_ctrler.output
-						, system_ctrler.py_ctrler.output
+						, fbvt.velo_x
 						, system_ctrler.velo_x_ctrler.output
-						, system_ctrler.velo_y_ctrler.output
-						, odt.rollOrder*57.3
-						, odt.pitchOrder*57.3
+						, odt.rollOrder
+						, fbvt.roll_angle
+						, system_ctrler.roll_ctrler.output
 						, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 //									, fbvt.roll_angle*57.3
