@@ -34,7 +34,7 @@ const float Q[16]={
 void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 {	
 	float totalAcc=sqrt(sdt->acc[0]*sdt->acc[0]+sdt->acc[1]*sdt->acc[1]+sdt->acc[2]*sdt->acc[2]);
-	float gErr=fabs(totalAcc-9.814);
+	float gErr=fabs(totalAcc-9.8015);
 	u8 i;
 	if(gErr<0.4)
 	{
@@ -44,7 +44,7 @@ void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
 	else
 	{
 		for(i=0;i<3;i++)		
-			R[i*(measure_dim+1)]=0.2*(5+15/9.814*(gErr-0.4))+0.8*R[i*(measure_dim+1)];
+			R[i*(measure_dim+1)]=0.2*(5+15/9.8015*(gErr-0.4))+0.8*R[i*(measure_dim+1)];
 	}
 }
 
@@ -78,7 +78,7 @@ void vAEKFProcessTask(void* pvParameters)
 	};//acc[0],acc[1],acc[2],mag[0],mag[1],mag[2]
 
 	/*kalman filter*/
-	float dt=0.005;
+	float dt=0.004;
 	ekf_filter filter;
 	float measure[6]={0};
 	
@@ -212,8 +212,8 @@ void vAEKFProcessTask(void* pvParameters)
 			a2it.dt = 0.0;
 		}
 		xQueueSend(AHRS2HeightQueue,&a2it,0);
-
-		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
+		
+		vTaskDelayUntil(&lastTime,(portTickType)(4/portTICK_RATE_MS));
 	}
 }
 
