@@ -66,7 +66,7 @@ void TIM3_Config(void)
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_TIM3);
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_TIM3);
 
-	TIM_BaseInitStructure.TIM_Period = 2500; //5ms       //定时器3计时周期   
+	TIM_BaseInitStructure.TIM_Period = 2500; //4ms       //定时器3计时周期   
     TIM_BaseInitStructure.TIM_Prescaler = (uint16_t) ((SystemCoreClock/2) / 1000000) - 1; //1us       
     TIM_BaseInitStructure.TIM_ClockDivision = 0;     
     TIM_BaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;    //向上计数

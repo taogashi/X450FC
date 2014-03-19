@@ -1,7 +1,6 @@
 #include "AHRSEKF.h"
 #include "stm32f4xx.h"
 #include <arm_math.h>
-#include "kalman.h"
 #include "axisTrans.h"
 #include "sensor.h"
 #include "filter.h"
@@ -12,56 +11,13 @@ xQueueHandle AHRSToFlightConQueue;
 xQueueHandle AHRSToINSQueue;
 xQueueHandle AHRS2HeightQueue;
 
-const float P[49]={	0.000049,	0,			0,			0,			0,		0,		0,
-					0,			0.000049,	0, 			0,			0,		0,		0,
-					0,			0,			0.000049, 	0,			0,		0,		0,
-					0,  		0,  		0, 			0.000049,	0,		0,		0,
-					0,			0,			0,			0,			0.1,	0,		0,
-					0,			0,			0,			0,			0,		0.1,	0,
-					0,			0,			0,			0,			0,		0,		0.1};
-
-const float R[36]={
-	0.01,  	0,  	0,		0,		0,		0, 
-	0,  	0.01,  	0,		0,		0,		0,
-	0,  	0,  	0.01,	0,		0,		0,
-	0,		0,		0,		0.04,	0,		0,
-	0,		0,		0,		0,		0.04,	0,
-	0,		0,		0,		0,		0,		0.04};   //观测噪声协方差阵
-
-const float Q[49]={
-			0.000004,	0,			0,  		0,			0,				0,				0,
-			0,			0.000004,	0,			0,			0,				0,				0,
-			0,			0,			0.000004,	0,			0,				0,				0,
-			0,    		0,      	0,  		0.000004,	0,				0,				0,
-			0,			0,			0,			0,			0.000000000001,	0,				0,
-			0,			0,			0,			0,			0,				0.000000000001,	0,
-			0,			0,			0,			0,			0,				0,				0.000000000001};
-
-//噪声协方差阵自适应
-void SetR(SensorDataType *sdt,float *R,u8 measure_dim)
-{	
-	float totalAcc=sqrt(sdt->acc[0]*sdt->acc[0]+sdt->acc[1]*sdt->acc[1]+sdt->acc[2]*sdt->acc[2]);
-	float gErr=fabs(totalAcc-9.8015);
-	u8 i;
-	if(gErr<0.4)
-	{
-		for(i=0;i<3;i++)
-			R[i*(measure_dim+1)]=0.2*(0.01+0.24/0.4*gErr)+0.8*R[i*(measure_dim+1)];			
-	}
-	else
-	{
-		for(i=0;i<3;i++)		
-			R[i*(measure_dim+1)]=0.2*(0.25+0.75/9.8015*(gErr-0.4))+0.8*R[i*(measure_dim+1)];
-	}
-}
-
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
 {	
-	char print_buffer[100];
-	u16 string_len;
-	
-	u8 i;
+//	char print_buffer[100];
+//	u16 string_len;
+//	
+//	u8 i;
 	
 	/*sensor data*/
 	SensorDataType sdt;
@@ -96,15 +52,15 @@ void vAEKFProcessTask(void* pvParameters)
 		a2it.height = sdt.height;
 		a2it.dt += dt;
 							
-		if(i++>=40)
-		{			
-			i=0;
-			
-			string_len = sprintf(print_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-											,angle[0]*57.3, angle[1]*57.3, angle[2]*57.3
-											,sdt.acc[0],sdt.acc[1],sdt.acc[2]);
-			UartSend(print_buffer, string_len);
-		}
+//		if(i++>=40)
+//		{			
+//			i=0;
+//			
+//			string_len = sprintf(print_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//											,angle[0]*57.3, angle[1]*57.3, angle[2]*57.3
+//											,sdt.acc[0],sdt.acc[1],sdt.acc[2]);
+//			UartSend(print_buffer, string_len);
+//		}
 		Quat2Angle(angle,sdt.quaternion);
 		
 		/*fill data to flight controll*/

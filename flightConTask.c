@@ -283,7 +283,7 @@ void vFlyConTask(void* pvParameters)
 		WriteMotor(&opt);
 
 		/************ print message **********************/
-		if(CNT++>=30)
+		if(CNT++>=40)
 		{
 			CNT=0;
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
@@ -311,16 +311,14 @@ void vFlyConTask(void* pvParameters)
 //						, odt.rollOrder*57.3
 //						, odt.pitchOrder*57.3
 //						, cpt.thrust_out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
 									, fbvt.roll_angle*57.3
 									, fbvt.pitch_angle*57.3
 									, fbvt.yaw_angle*57.3
-									, fbvt.roll_rate*57.3
-									, fbvt.pitch_rate*57.3
-									, fbvt.yaw_rate*57.3
 									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
+//									, cpt.thrust_out
 //									, opt.motor1_Out
 //									, opt.motor2_Out
 //									, opt.motor3_Out
@@ -337,7 +335,7 @@ void vFlyConTask(void* pvParameters)
 //									, tim4IC2Width
 //									, tim4IC3Width
 //									, tim4IC4Width);
-//			UartSend(printf_buffer,string_len);
+			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
 	}
@@ -481,21 +479,21 @@ void ControllerInit(void)
 	system_ctrler.roll_ctrler.kd = optional_param_global.loop_pid[1].xPID[2];
 	system_ctrler.roll_ctrler.i_limit = 0.6;
 	system_ctrler.roll_ctrler.d_limit = 1.0;
-	system_ctrler.roll_ctrler.out_limit = 2.5;
+	system_ctrler.roll_ctrler.out_limit = 4.0;
 	
 	system_ctrler.pitch_ctrler.kp = optional_param_global.loop_pid[1].yPID[0];
 	system_ctrler.pitch_ctrler.ki = optional_param_global.loop_pid[1].yPID[1];
 	system_ctrler.pitch_ctrler.kd = optional_param_global.loop_pid[1].yPID[2];
 	system_ctrler.pitch_ctrler.i_limit = 0.6;
 	system_ctrler.pitch_ctrler.d_limit = 1.0;
-	system_ctrler.pitch_ctrler.out_limit = 2.5;
+	system_ctrler.pitch_ctrler.out_limit = 4.0;
 	
 	system_ctrler.yaw_ctrler.kp = optional_param_global.loop_pid[1].zPID[0];
 	system_ctrler.yaw_ctrler.ki = optional_param_global.loop_pid[1].zPID[1];
 	system_ctrler.yaw_ctrler.kd = optional_param_global.loop_pid[1].zPID[2];
 	system_ctrler.yaw_ctrler.i_limit = 0.6;
 	system_ctrler.yaw_ctrler.d_limit = 1.0;
-	system_ctrler.yaw_ctrler.out_limit = 2.5;
+	system_ctrler.yaw_ctrler.out_limit = 4.0;
 	
 	/*velo loop*/
 	system_ctrler.velo_x_ctrler.kp = optional_param_global.loop_pid[2].xPID[0];
@@ -706,10 +704,10 @@ void WriteMotor(OutputType* opt)
 	else
 		TIM_SetCompare4(TIM3, (u16)(1000+opt->motor4_Out*1000));
 
-//	TIM_SetCompare1(TIM3,100);	//youmenOut 	 
-//	TIM_SetCompare2(TIM3,100);	//youmenOut 	  
-//	TIM_SetCompare3(TIM3,100);	//youmenOut	  
-//	TIM_SetCompare4(TIM3,100);	//youmenOut	
+//	TIM_SetCompare1(TIM3,1200);	//youmenOut 	 
+//	TIM_SetCompare2(TIM3,1200);	//youmenOut 	  
+//	TIM_SetCompare3(TIM3,1200);	//youmenOut	  
+//	TIM_SetCompare4(TIM3,1200);	//youmenOut	
 }	
 
 /* roll the roll-stick rightmost to leftmost to start*/

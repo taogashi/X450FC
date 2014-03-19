@@ -66,9 +66,9 @@ int main(void)
 	InitAllQueue();
 //	/* Start the tasks defined within this file/specific to this demo. */
 	xTaskCreate(vLED1Task, ( signed portCHAR * ) "LED", configMINIMAL_STACK_SIZE, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
-	xTaskCreate(vSenAHRSRead, ( signed portCHAR * ) "AHRSread", configMINIMAL_STACK_SIZE+32, (void *)NULL,tskIDLE_PRIORITY+3, NULL );
+	xTaskCreate(vSenAHRSRead, ( signed portCHAR * ) "AHRSread", configMINIMAL_STACK_SIZE+128, (void *)NULL,tskIDLE_PRIORITY+3, NULL );
 
-	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+1024, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
+	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
 	xTaskCreate(vhEKFTask, (signed portCHAR *) "height_ekf", configMINIMAL_STACK_SIZE+256, (void *)NULL, tskIDLE_PRIORITY+2, NULL);
 //	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
 
