@@ -516,14 +516,14 @@ void ControllerInit(void)
 	system_ctrler.velo_x_ctrler.kd = optional_param_global.loop_pid[2].xPID[2];
 	system_ctrler.velo_x_ctrler.i_limit = 0.1;
 	system_ctrler.velo_x_ctrler.d_limit = 0.2;
-	system_ctrler.velo_x_ctrler.out_limit = 0.4;
+	system_ctrler.velo_x_ctrler.out_limit = 0.6;
 	
 	system_ctrler.velo_y_ctrler.kp = optional_param_global.loop_pid[2].yPID[0];
 	system_ctrler.velo_y_ctrler.ki = optional_param_global.loop_pid[2].yPID[1];
 	system_ctrler.velo_y_ctrler.kd = optional_param_global.loop_pid[2].yPID[2];
 	system_ctrler.velo_y_ctrler.i_limit = 0.1;
 	system_ctrler.velo_y_ctrler.d_limit = 0.2;
-	system_ctrler.velo_y_ctrler.out_limit = 0.4;
+	system_ctrler.velo_y_ctrler.out_limit = 0.6;
 	
 	system_ctrler.velo_z_ctrler.kp = optional_param_global.loop_pid[2].zPID[0];
 	system_ctrler.velo_z_ctrler.ki = optional_param_global.loop_pid[2].zPID[1];
