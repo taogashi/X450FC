@@ -63,6 +63,9 @@ void vhEKFTask(void* pvParameters)
 		dt = (xTaskGetTickCount() - lastTick)*0.0005;
 		lastTick = xTaskGetTickCount();
 		
+		if(dt < 0.003)
+			dt = 0.003;
+		
 		//update height parameters
 		Quat2dcm(Cbn, a2it.q);
 		accz = Cbn[6]*a2it.acc[0]

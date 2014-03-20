@@ -118,6 +118,7 @@ void vFlyConTask(void* pvParameters)
 	OutputType opt={0.0,0.0,0.0,0.0};
 
 	portTickType lastTime;
+	float dt = 0.003;
 
 	Blinks(LED1,4);
 	
@@ -166,7 +167,7 @@ void vFlyConTask(void* pvParameters)
 				if(odt.lock_en == 1)
 				{
 					/*position control*/
-					PosLoop(&fbvt, &odt, &wpt, &system_ctrler, 0.005);
+					PosLoop(&fbvt, &odt, &wpt, &system_ctrler, dt);
 				}
 				else
 				{
@@ -188,7 +189,7 @@ void vFlyConTask(void* pvParameters)
 			if((fbvt.pos_valid & POS_Z_VALID)!=0)
 			{
 				/* height control */
-				HeightLoop(&fbvt, &odt, &wpt, &system_ctrler, 0.005);
+				HeightLoop(&fbvt, &odt, &wpt, &system_ctrler, dt);
 				pos_loop_cnt = 0;
 				fbvt.pos_valid &= (~POS_Z_VALID);
 			}
@@ -203,7 +204,7 @@ void vFlyConTask(void* pvParameters)
 		{
 			if((fbvt.velo_valid & VELO_X_VALID)!=0 && (fbvt.velo_valid & VELO_Y_VALID)!=0)
 			{
-				HorVeloLoop(&fbvt, &system_ctrler, 0.005);
+				HorVeloLoop(&fbvt, &system_ctrler, dt);
 				velo_loop_cnt = 0;
 				fbvt.velo_valid &= (~VELO_X_VALID);
 				fbvt.velo_valid &= (~VELO_Y_VALID);
@@ -216,7 +217,7 @@ void vFlyConTask(void* pvParameters)
 			
 			if((fbvt.velo_valid & VELO_Z_VALID)!=0)
 			{
-				HeightVeloLoop(&fbvt, &system_ctrler, 0.005);
+				HeightVeloLoop(&fbvt, &system_ctrler, dt);
 				cpt.thrust_out = optional_param_global.miscel[0] + system_ctrler.velo_z_ctrler.output; 
 				velo_loop_cnt = 0;
 				fbvt.velo_valid &= (~VELO_Z_VALID);
@@ -242,7 +243,7 @@ void vFlyConTask(void* pvParameters)
 		{
 			if((fbvt.angle_valid & ANGLE_ALL_VALID)!=0)
 			{
-				AngleLoop(&fbvt, &odt, &yaw_locked, &system_ctrler, 0.005);
+				AngleLoop(&fbvt, &odt, &yaw_locked, &system_ctrler, dt);
 				angle_loop_cnt = 0;
 				fbvt.angle_valid = 0;
 			}
@@ -257,7 +258,7 @@ void vFlyConTask(void* pvParameters)
 		/************************* rate loop ***********************/
 		if((fbvt.rate_valid & RATE_ALL_VALID)!=0)
 		{
-			RateLoop(&fbvt, &system_ctrler, 0.005);
+			RateLoop(&fbvt, &system_ctrler, dt);
 		}
 		
 		cpt.roll_moment = system_ctrler.rollrate_ctrler.output;
@@ -283,7 +284,7 @@ void vFlyConTask(void* pvParameters)
 		WriteMotor(&opt);
 
 		/************ print message **********************/
-		if(CNT++>=40)
+		if(CNT++>=60)
 		{
 			CNT=0;
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
@@ -311,11 +312,11 @@ void vFlyConTask(void* pvParameters)
 //						, odt.rollOrder*57.3
 //						, odt.pitchOrder*57.3
 //						, cpt.thrust_out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-									, fbvt.roll_angle*57.3
-									, fbvt.pitch_angle*57.3
-									, fbvt.yaw_angle*57.3
-									, cpt.thrust_out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+//									, fbvt.roll_angle*57.3
+//									, fbvt.pitch_angle*57.3
+//									, fbvt.yaw_angle*57.3
+//									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
 //									, cpt.thrust_out
@@ -323,13 +324,10 @@ void vFlyConTask(void* pvParameters)
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//									, system_ctrler.height_ctrler.desired
-//									, system_ctrler.height_ctrler.actual
-//									, system_ctrler.height_ctrler.output
-//									, system_ctrler.velo_z_ctrler.desired
-//									, system_ctrler.velo_z_ctrler.actual
-//									, cpt.thrust_out);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
+									, fbvt.pos_z
+									, fbvt.velo_z
+									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
@@ -337,7 +335,7 @@ void vFlyConTask(void* pvParameters)
 //									, tim4IC4Width);
 			UartSend(printf_buffer,string_len);
 		}
-		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
+		vTaskDelayUntil(&lastTime,(portTickType)(3/portTICK_RATE_MS));
 	}
 }
 
@@ -776,31 +774,37 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
-	fbvt->pos_valid = 0;
-	fbvt->velo_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
 {
-//	PIDCtrlerAuxiliaryType msg2ctrler;
+	PIDCtrlerAuxiliaryType msg2ctrler;
 	float sinPesi = arm_sin_f32(fbvt->yaw_angle);
 	float cosPesi = arm_cos_f32(fbvt->yaw_angle);
 	
-//	msg2ctrler.pid_type = PID_TYPE_POS;
-//	msg2ctrler.err_filter = NULL;
-//	msg2ctrler.deriv_filter = NULL;
-//	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
+	msg2ctrler.pid_type = PID_TYPE_POS;
+	msg2ctrler.err_filter = NULL;
+	msg2ctrler.deriv_filter = NULL;
+	msg2ctrler.dt = dt * POS_LOOP_DIVIDER;
 	
-//	if(
-//	msg2ctrler.in = wpt->x*0.001;
-//	msg2ctrler.fb = fbvt->pos_x;
-//	PIDProccessing(&(system_ctrler->px_ctrler), &msg2ctrler);
+	if(odt->pitchOrder >= -0.1 && odt->pitchOrder <= 0.1 && odt->rollOrder >= -0.1 && odt->rollOrder <= 0.1)
+	{	
+		msg2ctrler.in = wpt->x*0.001;
+		msg2ctrler.fb = fbvt->pos_x;
+		PIDProccessing(&(system_ctrler->px_ctrler), &msg2ctrler);
 
-//	msg2ctrler.in = wpt->y*0.001;
-//	msg2ctrler.fb = fbvt->pos_y;
-//	PIDProccessing(&(system_ctrler->py_ctrler), &msg2ctrler);
-	system_ctrler->px_ctrler.output = 2*(odt->pitchOrder*cosPesi - odt->rollOrder*sinPesi);
-	system_ctrler->py_ctrler.output = 2*(odt->pitchOrder*sinPesi + odt->rollOrder*cosPesi);
+		msg2ctrler.in = wpt->y*0.001;
+		msg2ctrler.fb = fbvt->pos_y;
+		PIDProccessing(&(system_ctrler->py_ctrler), &msg2ctrler);
+	}
+	else
+	{
+		system_ctrler->px_ctrler.output = 2*(-odt->pitchOrder*cosPesi - odt->rollOrder*sinPesi);
+		system_ctrler->py_ctrler.output = 2*(-odt->pitchOrder*sinPesi + odt->rollOrder*cosPesi);
+		
+		wpt->x = fbvt->pos_x * 1000;
+		wpt->y = fbvt->pos_y * 1000;
+	}
 }
 
 void HorVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt)

@@ -79,7 +79,7 @@ void vAEKFProcessTask(void* pvParameters)
 		}
 		xQueueSend(AHRS2HeightQueue,&a2it,0);
 
-		vTaskDelayUntil(&lastTime,(portTickType)(5/portTICK_RATE_MS));
+		vTaskDelayUntil(&lastTime,(portTickType)(3/portTICK_RATE_MS));
 	}
 }
 
