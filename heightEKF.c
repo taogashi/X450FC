@@ -44,7 +44,7 @@ void vhEKFTask(void* pvParameters)
 	float measure=0.0;//height
 	float dt;
 	
-	float heightParam[3]={0.0, 0.0, 0.0};
+	float heightParam[3]={0.0, 0.0, 0.1};
 
 	filter = ekf_filter_new(3,1, (float *)hQ, (float *)&hR
 							, height_GetA, height_GetH
@@ -52,7 +52,7 @@ void vhEKFTask(void* pvParameters)
 	memcpy(filter->P, hP, filter->state_dim*filter->state_dim*sizeof(float));
 	filter->x[0] = 0.0;
 	filter->x[1] = 0.0;
-	filter->x[2] = 0.0;
+	filter->x[2] = 0.1;
 	
 	xQueueReceive(AHRS2HeightQueue, &a2it, portMAX_DELAY);
 	
