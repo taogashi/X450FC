@@ -70,7 +70,7 @@ int main(void)
 
 	xTaskCreate(vAEKFProcessTask, ( signed portCHAR * ) "ahrs_ekf", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+2, NULL );
 	xTaskCreate(vhEKFTask, (signed portCHAR *) "height_ekf", configMINIMAL_STACK_SIZE+256, (void *)NULL, tskIDLE_PRIORITY+2, NULL);
-//	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
+	xTaskCreate(vINSAligTask, ( signed portCHAR * ) "INSaligment", configMINIMAL_STACK_SIZE+64, (void *)NULL,tskIDLE_PRIORITY+1, NULL );
 
 	xTaskCreate(vFlyConTask, ( signed portCHAR * ) "flightControl", configMINIMAL_STACK_SIZE+512, (void *)NULL,tskIDLE_PRIORITY+4, NULL );
 

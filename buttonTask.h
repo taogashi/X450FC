@@ -10,7 +10,9 @@ typedef enum{
 	MODE3
 }SystemRunMode;
 
-extern SystemRunMode SYSMODE;
+SystemRunMode GetSystemMode(void);
+void SetSystemMode(SystemRunMode sm);
+
 extern xQueueHandle xButtonQueueISR;
 void vButtonEXTIHandler(void* vParameter);
 

@@ -24,7 +24,6 @@ void EXTI3_IRQHandler(void)
 	}
 }
 
-
 void vButtonEXTIHandler(void* vParameter)
 {
 	char printf_buffer[100];
@@ -97,4 +96,14 @@ void vButtonEXTIHandler(void* vParameter)
 				break;				
 		}
 	}
+}
+
+SystemRunMode GetSystemMode(void)
+{
+	return SYSMODE;
+}
+
+void SetSystemMode(SystemRunMode sm)
+{
+	SYSMODE = sm;
 }

@@ -338,6 +338,7 @@ void vFlyConTask(void* pvParameters)
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(3/portTICK_RATE_MS));
 	}
+
 }
 
 s32 CalChecksum(OptionalPara* OP)
@@ -775,6 +776,8 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
+//	fbvt->velo_valid = 0;
+//	fbvt->pos_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)

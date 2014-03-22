@@ -11,6 +11,7 @@
 #include "axisTrans.h"
 #include "diskTask.h"
 #include "ledTask.h"
+#include "buttonTask.h"
 #include "gps.h"
 
 /***********************macro definition*************************/
@@ -193,6 +194,7 @@ void vINSAligTask(void* pvParameters)
 	x[8]=0.0;
 #else
 	//normol mode
+	Blinks(LED1, 3);
 	/*GPS data is not needed in debug mode*/
 	while(gps_validate_cnt < 20)	//
 	{		
@@ -206,6 +208,8 @@ void vINSAligTask(void* pvParameters)
 			gps_validate_cnt ++;
 		}
 	}
+	
+	Blinks(LED1, 2);
 	
 	GPSSetInitPos(&gdt);
 	
@@ -235,6 +239,7 @@ void vINSAligTask(void* pvParameters)
 		string_len = sprintf(printf_buffer, "failed to initialize\r\n");
 		UartSend(printf_buffer, string_len);
 	}
+	SetSystemMode(MODE2);
 	vTaskDelete(NULL);
 }
 
@@ -363,13 +368,8 @@ void vIEKFProcessTask(void* pvParameters)
 					
 					INS_Update(navParamCur,&cur_a2it);
 				}
+				Blinks(LED1, 1);
 			}
-			
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-								,navParamK[0],navParamK[1],navParamK[2]
-								,navParamK[3],navParamK[4],navParamK[5]
-								,navParamK[6],navParamK[7],navParamK[8]);
-			UartSend(printf_buffer, string_len);
 		}
 		if(acc_bias_stable == 1)
 		{
@@ -384,6 +384,13 @@ void vIEKFProcessTask(void* pvParameters)
 			/*put to queue*/
 			xQueueSend(INSToFlightConQueue,&pdt,0);	
 		}
+		string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.3f\r\n"
+								,k_a2it.acc[0],k_a2it.acc[1],k_a2it.acc[2]
+								,navParamK[0],navParamK[1],navParamK[2]
+								,navParamK[3],navParamK[4],navParamK[5]
+								,navParamK[6],navParamK[7],navParamK[8]
+								,dt);
+		xQueueSend(xDiskLogQueue, printf_buffer, 0);
 	}
 }
 

@@ -85,12 +85,13 @@ void vDiskOperation(void* vParameter)
 				//put parameters to the queue
 				xQueueSend(xDiskParamQueue,&index,0);
 				//make sure the parameters is received by flightConTask
-				xstatus = xQueuePeek(xDiskParamQueue,&index,0);
-				while(xstatus == pdPASS)
-				{
-					vTaskDelay((portTickType)10/portTICK_RATE_MS);
-					xstatus = xQueuePeek(xDiskParamQueue,&index,0);
-				}
+//				xstatus = xQueuePeek(xDiskParamQueue,&index,0);
+//				while(xstatus == pdPASS)
+//				{
+//					vTaskDelay((portTickType)10/portTICK_RATE_MS);
+//					xstatus = xQueuePeek(xDiskParamQueue,&index,0);
+//				}
+				vTaskDelay((portTickType)2000/portTICK_RATE_MS);
 			}		
 		}
 	}
@@ -120,7 +121,7 @@ void vDiskOperation(void* vParameter)
 		switch(logState)
 		{
 			case 0:
-				if(SYSMODE==MODE2)
+				if(GetSystemMode()==MODE2)
 				{
 					f_unlink("log.txt");
 					res = f_open(&logFile,"log.txt",FA_WRITE | FA_OPEN_ALWAYS);
@@ -133,7 +134,7 @@ void vDiskOperation(void* vParameter)
 				}
 				break;
 			case 1:
-				if(SYSMODE==MODE1)
+				if(GetSystemMode()==MODE1)
 				{
 					f_close(&logFile);
 					logState=0;
