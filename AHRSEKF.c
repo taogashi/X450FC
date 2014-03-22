@@ -3,9 +3,6 @@
 #include <arm_math.h>
 #include "axisTrans.h"
 #include "sensor.h"
-#include "filter.h"
-#include "diskTask.h"
-#include "buttonTask.h"
 #include <stdio.h>
 
 xQueueHandle AHRSToFlightConQueue;
@@ -15,7 +12,7 @@ xQueueHandle AHRS2HeightQueue;
 /*------------------------------tasks----------------------------------------*/
 void vAEKFProcessTask(void* pvParameters)
 {	
-	char print_buffer[100];
+//	char print_buffer[100];
 //	u16 string_len;
 //	
 //	u8 i;
@@ -35,7 +32,6 @@ void vAEKFProcessTask(void* pvParameters)
 	
 	portTickType lastTime;
 	
-	SetSystemMode(MODE2);
 	lastTime = xTaskGetTickCount();
 	/*filter loop*/
 	for(;;)
@@ -81,10 +77,6 @@ void vAEKFProcessTask(void* pvParameters)
 		}
 		xQueueSend(AHRS2HeightQueue,&a2it,0);
 
-		sprintf(print_buffer, "%.3f %.3f %.3f %.3f %.3f %.3f\r\n"
-							, sdt.gyr[0], sdt.gyr[1], sdt.gyr[2]
-							, sdt.acc[0], sdt.acc[1], sdt.acc[2]);
-		xQueueSend(xDiskLogQueue, print_buffer, 0);
 		vTaskDelayUntil(&lastTime,(portTickType)(3/portTICK_RATE_MS));
 	}
 }
