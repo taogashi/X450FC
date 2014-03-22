@@ -324,9 +324,10 @@ void vFlyConTask(void* pvParameters)
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
 									, fbvt.pos_z
 									, fbvt.velo_z
+									, system_ctrler.height_ctrler.output
 									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
@@ -847,6 +848,7 @@ void HeightLoop(FeedBackValType *fbvt, OrderType *odt, WayPointType *wpt, struct
 		system_ctrler->height_ctrler.prev_err = 0.0;
 		system_ctrler->height_ctrler.deriv = 0.0;
 		
+//		system_ctrler->height_ctrler.output = (odt->thrustOrder - 0.5)*10;
 		if(odt->thrustOrder <= 0.4)
 			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.4)*10;
 		else

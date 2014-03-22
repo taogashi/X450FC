@@ -11,7 +11,7 @@ xQueueHandle height2FlightQueue;
 
 const float hP[9]={
 	2.0, 0.0, 0.0,
-	0.0, 2.0, 0.0,
+	0.0, 4.0, 0.0,
 	0.0, 0.0, 0.64,
 };
 

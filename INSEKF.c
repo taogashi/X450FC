@@ -14,7 +14,7 @@
 #include "gps.h"
 
 /***********************macro definition*************************/
-#define GPS_DELAY_CNT 100
+#define GPS_DELAY_CNT 130
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller

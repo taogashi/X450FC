@@ -26,7 +26,7 @@ void vAEKFProcessTask(void* pvParameters)
 	float angle[3]={0};
 
 	/*kalman filter*/
-	float dt=0.005;
+	float dt=0.003;
 
 	/*result*/
 	AHRSDataType acdt;
