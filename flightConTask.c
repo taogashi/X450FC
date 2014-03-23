@@ -73,6 +73,8 @@ void HeightVeloLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ct
 void AngleLoop(FeedBackValType *fbvt, OrderType *odt, float *desired_yaw, struct system_level_ctrler *system_ctrler, float dt);
 void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, float dt);
 
+u8 TargetReached(WayPointType *wpt, FeedBackValType *fbvt);
+
 void vFlyConTask(void* pvParameters)
 {
 	//for print
@@ -804,6 +806,10 @@ void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct sys
 	
 	if(odt->pitchOrder >= -0.1 && odt->pitchOrder <= 0.1 && odt->rollOrder >= -0.1 && odt->rollOrder <= 0.1)
 	{	
+		if(1 == TargetReached(wpt, fbvt))
+		{
+			xQueueReceive(xUartWayPointQueue, wpt, 0);
+		}
 		msg2ctrler.in = wpt->x*0.001;
 		msg2ctrler.fb = fbvt->pos_x;
 		PIDProccessing(&(system_ctrler->px_ctrler), &msg2ctrler);
@@ -958,4 +964,17 @@ void RateLoop(FeedBackValType *fbvt, struct system_level_ctrler *system_ctrler, 
 	msg2ctrler.err_filter = (void *)&yaw_rate_lpf;
 	
 	PIDProccessing(&(system_ctrler->yawrate_ctrler), &msg2ctrler);
+}
+
+u8 TargetReached(WayPointType *wpt, FeedBackValType *fbvt)
+{
+	int x_pos_err = wpt->x - fbvt->pos_x * 1000;
+	int y_pos_err = wpt->y - fbvt->pos_y * 1000;
+	
+	if(x_pos_err >= -wpt->posAcrcy && x_pos_err<=wpt->posAcrcy && y_pos_err>= -wpt->posAcrcy && y_pos_err<=wpt->posAcrcy)
+	{
+		return 1;
+	}
+	else
+		return 0;
 }

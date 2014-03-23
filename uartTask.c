@@ -298,25 +298,6 @@ void vUartRecTask(void* pvParameters)
 					UartSend(buffer, string_len);
 				}
 			}
-			/********************  checking Waypoint *************************/
-			else if((keyword=strstr(buffer,"Waypoint")) != NULL)
-			{
-				sscanf(keyword,WAYPOINT_FORMAT_IN
-						,&(wpt.properties),&(wpt.maxSpeed),&(wpt.time),&(wpt.posAcrcy)
-						,&(wpt.x),&(wpt.y),&(wpt.height),&(wpt.yaw));
-				sprintf(buffer, WAYPOINT_FORMAT_OUT
-						,(wpt.properties),(wpt.maxSpeed),(wpt.time),(wpt.posAcrcy)
-						,(wpt.x),(wpt.y),(wpt.height),(wpt.yaw));
-				UartSend(buffer, strlen(buffer));
-				if(wpt.properties == 1)
-				{
-					xQueueSendToFront(xUartWayPointQueue,&wpt,0);
-				}
-				else if(wpt.properties == 0)
-				{
-					xQueueSend(xUartWayPointQueue,&wpt,0);
-				}
-			}
 		}
 		
 		if(uart3Flag==1)
@@ -407,6 +388,25 @@ void vUartRecTask(void* pvParameters)
 
 					if(gpsData.Lati > 100.0)
 						xQueueSend(xUartGPSQueue,&gpsData,0);
+				}
+			}
+			/********************  checking Waypoint *************************/
+			else if((keyword=strstr(buffer,"Waypoint")) != NULL)
+			{
+				sscanf(keyword,WAYPOINT_FORMAT_IN
+						,&(wpt.properties),&(wpt.maxSpeed),&(wpt.time),&(wpt.posAcrcy)
+						,&(wpt.x),&(wpt.y),&(wpt.height),&(wpt.yaw));
+				sprintf(buffer, WAYPOINT_FORMAT_OUT
+						,(wpt.properties),(wpt.maxSpeed),(wpt.time),(wpt.posAcrcy)
+						,(wpt.x),(wpt.y),(wpt.height),(wpt.yaw));
+				UartSend(buffer, strlen(buffer));
+				if(wpt.properties == 1)
+				{
+					xQueueSendToFront(xUartWayPointQueue,&wpt,0);
+				}
+				else if(wpt.properties == 0)
+				{
+					xQueueSend(xUartWayPointQueue,&wpt,0);
 				}
 			}
 		}
