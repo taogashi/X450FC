@@ -30,8 +30,8 @@ void height_hFunc(float *hx, void *para1,void *para2,void *para3,void *para4);
 
 void vhEKFTask(void* pvParameters)
 {
-	char printf_buffer[100];
-	u16 string_len;
+//	char printf_buffer[100];
+//	u16 string_len;
 	
 	u8 i=0;
 	portTickType lastTick;
@@ -44,7 +44,7 @@ void vhEKFTask(void* pvParameters)
 	float measure=0.0;//height
 	float dt;
 	
-	float heightParam[3]={0.0, 0.0, 0.1};
+	float heightParam[3]={0.0, 0.0, -0.11};
 
 	filter = ekf_filter_new(3,1, (float *)hQ, (float *)&hR
 							, height_GetA, height_GetH
@@ -52,7 +52,7 @@ void vhEKFTask(void* pvParameters)
 	memcpy(filter->P, hP, filter->state_dim*filter->state_dim*sizeof(float));
 	filter->x[0] = 0.0;
 	filter->x[1] = 0.0;
-	filter->x[2] = 0.1;
+	filter->x[2] = -0.11;
 	
 	xQueueReceive(AHRS2HeightQueue, &a2it, portMAX_DELAY);
 	
@@ -105,11 +105,11 @@ void vhEKFTask(void* pvParameters)
 			
 			filter->x[0] = 0.0;
 			filter->x[1] = 0.0;
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
-									, vt.height
-									, vt.velo_z
-									, filter->x[2]);
-			UartSend(printf_buffer,string_len);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f\r\n"
+//									, vt.height
+//									, vt.velo_z
+//									, filter->x[2]);
+//			UartSend(printf_buffer,string_len);
 		}
 		vt.height = heightParam[0] + filter->x[0];
 		vt.velo_z = heightParam[1] + filter->x[1];

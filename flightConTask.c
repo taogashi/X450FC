@@ -324,17 +324,18 @@ void vFlyConTask(void* pvParameters)
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
 									, fbvt.pos_z
 									, fbvt.velo_z
 									, system_ctrler.height_ctrler.output
+									, system_ctrler.height_ctrler.integ
 									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
 //									, tim4IC3Width
 //									, tim4IC4Width);
-//			UartSend(printf_buffer,string_len);
+			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(3/portTICK_RATE_MS));
 	}
@@ -853,9 +854,9 @@ void HeightLoop(FeedBackValType *fbvt, OrderType *odt, WayPointType *wpt, struct
 		
 //		system_ctrler->height_ctrler.output = (odt->thrustOrder - 0.5)*10;
 		if(odt->thrustOrder <= 0.4)
-			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.4)*10;
+			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.4)*10;// + system_ctrler->height_ctrler.integ;
 		else
-			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.6)*10;
+			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.6)*10;// + system_ctrler->height_ctrler.integ;
 	}
 }
 
