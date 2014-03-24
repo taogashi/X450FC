@@ -18,7 +18,7 @@ const char* MISCEL_FORMAT_IN = "Miscel,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
 const char* MISCEL_FORMAT_OUT = "set Miscel,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n";
 const char* NEUTRAL_FORMAT_IN="Neutral,%hd,%hd,%hd,%hd";
 const char* NEUTRAL_FORMAT_OUT="set Neutral para: %d,%d,%d,%d\r\n";
-const char* WAYPOINT_FORMAT_IN="Waypoint,%hd,%hd,%hd,%hd,%d,%d,%d,%d";
+const char* WAYPOINT_FORMAT_IN="Waypoint,%hd,%hd,%hd,%hd,%hd,%d,%d,%d";
 const char* WAYPOINT_FORMAT_OUT="Waypoint,%d,%d,%d,%d,%d,%d,%d,%d\r\n";
 
 OptionalPara optional_param_global;
@@ -518,14 +518,14 @@ void ControllerInit(void)
 	system_ctrler.velo_x_ctrler.kd = optional_param_global.loop_pid[2].xPID[2];
 	system_ctrler.velo_x_ctrler.i_limit = 0.1;
 	system_ctrler.velo_x_ctrler.d_limit = 0.2;
-	system_ctrler.velo_x_ctrler.out_limit = 0.6;
+	system_ctrler.velo_x_ctrler.out_limit = 0.4;
 	
 	system_ctrler.velo_y_ctrler.kp = optional_param_global.loop_pid[2].yPID[0];
 	system_ctrler.velo_y_ctrler.ki = optional_param_global.loop_pid[2].yPID[1];
 	system_ctrler.velo_y_ctrler.kd = optional_param_global.loop_pid[2].yPID[2];
 	system_ctrler.velo_y_ctrler.i_limit = 0.1;
 	system_ctrler.velo_y_ctrler.d_limit = 0.2;
-	system_ctrler.velo_y_ctrler.out_limit = 0.6;
+	system_ctrler.velo_y_ctrler.out_limit = 0.4;
 	
 	system_ctrler.velo_z_ctrler.kp = optional_param_global.loop_pid[2].zPID[0];
 	system_ctrler.velo_z_ctrler.ki = optional_param_global.loop_pid[2].zPID[1];
@@ -538,16 +538,16 @@ void ControllerInit(void)
 	system_ctrler.px_ctrler.kp = optional_param_global.loop_pid[3].xPID[0];
 	system_ctrler.px_ctrler.ki = optional_param_global.loop_pid[3].xPID[1];
 	system_ctrler.px_ctrler.kd = optional_param_global.loop_pid[3].xPID[2];
-	system_ctrler.px_ctrler.i_limit = 2.0;
-	system_ctrler.px_ctrler.d_limit = 2.0;
-	system_ctrler.px_ctrler.out_limit = 5.0;
+	system_ctrler.px_ctrler.i_limit = 0.3;
+	system_ctrler.px_ctrler.d_limit = 0.4;
+	system_ctrler.px_ctrler.out_limit = 0.6;
 	
 	system_ctrler.py_ctrler.kp = optional_param_global.loop_pid[3].yPID[0];
 	system_ctrler.py_ctrler.ki = optional_param_global.loop_pid[3].yPID[1];
 	system_ctrler.py_ctrler.kd = optional_param_global.loop_pid[3].yPID[2];
-	system_ctrler.py_ctrler.i_limit = 2.0;
-	system_ctrler.py_ctrler.d_limit = 2.0;
-	system_ctrler.py_ctrler.out_limit = 5.0;
+	system_ctrler.py_ctrler.i_limit = 0.3;
+	system_ctrler.py_ctrler.d_limit = 0.4;
+	system_ctrler.py_ctrler.out_limit = 0.6;
 	
 	system_ctrler.height_ctrler.kp = optional_param_global.loop_pid[3].zPID[0];
 	system_ctrler.height_ctrler.ki = optional_param_global.loop_pid[3].zPID[1];
@@ -791,6 +791,8 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
+//	fbvt->velo_valid = 0;
+//	fbvt->pos_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)

@@ -395,10 +395,10 @@ void vUartRecTask(void* pvParameters)
 			{
 				sscanf(keyword,WAYPOINT_FORMAT_IN
 						,&(wpt.properties),&(wpt.maxSpeed),&(wpt.time),&(wpt.posAcrcy)
-						,&(wpt.x),&(wpt.y),&(wpt.height),&(wpt.yaw));
+						,&(wpt.yaw),&(wpt.x),&(wpt.y),&(wpt.height));
 				sprintf(buffer, WAYPOINT_FORMAT_OUT
 						,(wpt.properties),(wpt.maxSpeed),(wpt.time),(wpt.posAcrcy)
-						,(wpt.x),(wpt.y),(wpt.height),(wpt.yaw));
+						,(wpt.yaw),(wpt.x),(wpt.y),(wpt.height));
 				UartSend(buffer, strlen(buffer));
 				if(wpt.properties == 1)
 				{
