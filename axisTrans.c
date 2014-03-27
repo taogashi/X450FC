@@ -19,7 +19,8 @@ void Quat2Angle(float *angle,float *quat)
 	angle[1]=asin(-c31);	 //-PI/2~PI/2
 	angle[0]=atan2(c32,c33);	//-PI~PI
 
-	if(angle[2]<0) angle[2]+=2*PI;
+	if(angle[2]<0.0) 
+		angle[2] += 2*PI;
 }
 
 void Angle2Quat(float *quat,float *angle)

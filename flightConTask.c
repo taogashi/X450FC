@@ -312,11 +312,11 @@ void vFlyConTask(void* pvParameters)
 //						, odt.rollOrder*57.3
 //						, odt.pitchOrder*57.3
 //						, cpt.thrust_out);
-//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-//									, fbvt.roll_angle*57.3
-//									, fbvt.pitch_angle*57.3
-//									, fbvt.yaw_angle*57.3
-//									, cpt.thrust_out);
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+									, fbvt.roll_angle*57.3
+									, fbvt.pitch_angle*57.3
+									, fbvt.yaw_angle*57.3
+									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
 //									, cpt.thrust_out
@@ -324,12 +324,12 @@ void vFlyConTask(void* pvParameters)
 //									, opt.motor2_Out
 //									, opt.motor3_Out
 //									, opt.motor4_Out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
-									, fbvt.pos_z
-									, fbvt.velo_z
-									, system_ctrler.height_ctrler.output
-									, system_ctrler.height_ctrler.integ
-									, cpt.thrust_out);
+//			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
+//									, fbvt.pos_z
+//									, fbvt.velo_z
+//									, system_ctrler.height_ctrler.output
+//									, system_ctrler.height_ctrler.integ
+//									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer,"%d %d %d %d\r\n"
 //									, tim4IC1Width
 //									, tim4IC2Width
@@ -777,8 +777,8 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
-//	fbvt->velo_valid = 0;
-//	fbvt->pos_valid = 0;
+	fbvt->velo_valid = 0;
+	fbvt->pos_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
