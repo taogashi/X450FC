@@ -191,6 +191,15 @@ void AHRS_IRQHandler(void)
 		}
 		SPI_I2S_SendData(AHRS_SPI, Dummy_Byte);
 		spi_com_stage++;
+		if(spi_com_stage >= 50)
+		{
+			bbstatus = 0;
+			SPI_I2S_ITConfig(AHRS_SPI, SPI_I2S_IT_RXNE, DISABLE);
+			AHRS_SPI_CS_HIGH();
+			spi_com_stage = 0;
+			frame_captured = 1;
+			return;
+		}
 	}
 }
 

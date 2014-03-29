@@ -312,10 +312,12 @@ void vFlyConTask(void* pvParameters)
 //						, odt.rollOrder*57.3
 //						, odt.pitchOrder*57.3
 //						, cpt.thrust_out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 									, fbvt.roll_angle*57.3
 									, fbvt.pitch_angle*57.3
 									, fbvt.yaw_angle*57.3
+									, fbvt.pos_z
+									, fbvt.velo_z
 									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
@@ -478,21 +480,21 @@ void ControllerInit(void)
 	system_ctrler.roll_ctrler.kp = optional_param_global.loop_pid[1].xPID[0];
 	system_ctrler.roll_ctrler.ki = optional_param_global.loop_pid[1].xPID[1];
 	system_ctrler.roll_ctrler.kd = optional_param_global.loop_pid[1].xPID[2];
-	system_ctrler.roll_ctrler.i_limit = 0.6;
+	system_ctrler.roll_ctrler.i_limit = 0.3;
 	system_ctrler.roll_ctrler.d_limit = 1.0;
 	system_ctrler.roll_ctrler.out_limit = 4.0;
 	
 	system_ctrler.pitch_ctrler.kp = optional_param_global.loop_pid[1].yPID[0];
 	system_ctrler.pitch_ctrler.ki = optional_param_global.loop_pid[1].yPID[1];
 	system_ctrler.pitch_ctrler.kd = optional_param_global.loop_pid[1].yPID[2];
-	system_ctrler.pitch_ctrler.i_limit = 0.6;
+	system_ctrler.pitch_ctrler.i_limit = 0.3;
 	system_ctrler.pitch_ctrler.d_limit = 1.0;
 	system_ctrler.pitch_ctrler.out_limit = 4.0;
 	
 	system_ctrler.yaw_ctrler.kp = optional_param_global.loop_pid[1].zPID[0];
 	system_ctrler.yaw_ctrler.ki = optional_param_global.loop_pid[1].zPID[1];
 	system_ctrler.yaw_ctrler.kd = optional_param_global.loop_pid[1].zPID[2];
-	system_ctrler.yaw_ctrler.i_limit = 0.6;
+	system_ctrler.yaw_ctrler.i_limit = 0.3;
 	system_ctrler.yaw_ctrler.d_limit = 1.0;
 	system_ctrler.yaw_ctrler.out_limit = 4.0;
 	
@@ -777,8 +779,8 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
-	fbvt->velo_valid = 0;
-	fbvt->pos_valid = 0;
+//	fbvt->velo_valid = 0;
+//	fbvt->pos_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)

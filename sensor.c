@@ -11,13 +11,17 @@ SensorDataType localSDT={{0,0,0},{0,0,-9.8015},{0},0.0};
 void vSenAHRSRead(void* pvParameters)
 {
 	portBASE_TYPE xstatus;
-	u8 i;
+	u8 i=0;
 
 	AHRS_SPI_Config();
 
-	while(!ReadAHRSRaw(&localSDT))
+	while(i<10)
 	{
-		vTaskDelay((portTickType)(100/portTICK_RATE_MS));
+		vTaskDelay((portTickType)(50/portTICK_RATE_MS));
+		if(1 == ReadAHRSRaw(&localSDT))
+		{
+			i++;
+		}
 	}
 
 	for(;;)
