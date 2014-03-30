@@ -9,10 +9,8 @@
 #include "uartTask.h"
 #include "kalman.h"
 #include "axisTrans.h"
-#include "diskTask.h"
-#include "ledTask.h"
-#include "buttonTask.h"
 #include "gps.h"
+#include "flightConTask.h"
 
 /***********************macro definition*************************/
 #define GPS_DELAY_CNT 130
@@ -165,17 +163,16 @@ void vINSAligTask(void* pvParameters)
 
 #ifdef INS_DEBUG	
 	/*GPS data is not needed in debug mode*/
-
-	initPos[0] = 0.0;
-	initPos[1] = 0.0;
-//	if(uw_present > 10)
-//		initPos[2] = uw_height;
-//	else
-//		initPos[2] = a2it.height;
+	while(gps_validate_cnt++ < GPS_DELAY_CNT+10)
+	{
+		xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);
+		PutToBuffer(&a2it);
+		baro_height = 0.98*baro_height + 0.02*a2it.height;
+	}
 	
 	navParamK[0] = 0.0;
 	navParamK[1] = 0.0;
-	navParamK[2] = 0.0;
+	navParamK[2] = baro_height;
 	navParamK[3] = 0.0;
 	navParamK[4] = 0.0;
 	navParamK[5] = 0.0;
@@ -208,9 +205,7 @@ void vINSAligTask(void* pvParameters)
 			gps_validate_cnt ++;
 		}
 	}
-	
-	Blinks(LED1, 2);
-	
+
 	GPSSetInitPos(&gdt);
 	
 	navParamK[0] = 0.0;
@@ -239,7 +234,6 @@ void vINSAligTask(void* pvParameters)
 		string_len = sprintf(printf_buffer, "failed to initialize\r\n");
 		UartSend(printf_buffer, string_len);
 	}
-	SetSystemMode(MODE2);
 	vTaskDelete(NULL);
 }
 
@@ -249,6 +243,9 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
+#ifdef INS_DEBUG
+	u8 cnt=0;
+#endif
 	char printf_buffer[100];
 	u16 string_len;
 	
@@ -271,6 +268,18 @@ void vIEKFProcessTask(void* pvParameters)
 	memcpy(filter->x,x,filter->state_dim*sizeof(float));
 	memcpy(filter->P,iP,filter->state_dim*filter->state_dim*sizeof(float));
 
+#ifdef INS_DEBUG
+	while(optional_param_global.miscel[4] < 0.0 || optional_param_global.miscel[4]>100.0)
+	{
+		vTaskDelay((portTickType)(200/portTICK_RATE_MS));
+	}
+	filter->Q[10] = filter->Q[0] = optional_param_global.miscel[1];
+	filter->Q[40] = filter->Q[30] = optional_param_global.miscel[2];
+	filter->Q[70] = filter->Q[60] = optional_param_global.miscel[3];
+	filter->R[6] = filter->R[0] = optional_param_global.miscel[4];
+	filter->R[24] = filter->R[18] = optional_param_global.miscel[5];
+#endif
+	
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&cur_a2it,portMAX_DELAY);
 	
@@ -298,12 +307,21 @@ void vIEKFProcessTask(void* pvParameters)
 					, (void *)(&dt)
 					, (void *)(filter->A)
 					, (void *)NULL);
-
+#ifdef INS_DEBUG
+		if(cnt ++ >=150)
+		{
+			float meas_Err[5]={0.0};
+			cnt = 0;
+			measure[0] = 0.0;
+			measure[1] = 0.0;
+			measure[3] = 0.0;
+			measure[4] = 0.0;
+#else
 		if(pdPASS == xQueueReceive(xUartGPSQueue,&gdt,0))
 		{
 			float meas_Err[5]={0.0};
-		
 			GPSGetLocalXY(&gdt, measure, measure+1, measure+3, measure+4, 6.1677);
+#endif		
 			measure[2] = cur_a2it.height;
 			
 			for(i=0;i<5;i++)
@@ -343,7 +361,7 @@ void vIEKFProcessTask(void* pvParameters)
 			
 			/*when acc bias stable, 
 			 *calculate current navigation parameters*/
-			if(!acc_bias_stable && filter->P[60]<0.007)
+			if(!acc_bias_stable && filter->P[60]<0.0345)
 			{
 				acc_bias_stable = 1;
 				//set init value
@@ -368,8 +386,12 @@ void vIEKFProcessTask(void* pvParameters)
 					
 					INS_Update(navParamCur,&cur_a2it);
 				}
-				Blinks(LED1, 1);
 			}
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.4f\r\n"
+								,navParamCur[3],navParamCur[4],navParamCur[5]
+								,navParamCur[6],navParamCur[7],navParamCur[8]
+								,filter->P[60]);
+			UartSend(printf_buffer, string_len);
 		}
 		if(acc_bias_stable == 1)
 		{
@@ -384,13 +406,13 @@ void vIEKFProcessTask(void* pvParameters)
 			/*put to queue*/
 			xQueueSend(INSToFlightConQueue,&pdt,0);	
 		}
-		string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.3f\r\n"
-								,k_a2it.acc[0],k_a2it.acc[1],k_a2it.acc[2]
-								,navParamK[0],navParamK[1],navParamK[2]
-								,navParamK[3],navParamK[4],navParamK[5]
-								,navParamK[6],navParamK[7],navParamK[8]
-								,dt);
-		xQueueSend(xDiskLogQueue, printf_buffer, 0);
+//		string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.3f\r\n"
+//								,k_a2it.acc[0],k_a2it.acc[1],k_a2it.acc[2]
+//								,navParamK[0],navParamK[1],navParamK[2]
+//								,navParamK[3],navParamK[4],navParamK[5]
+//								,navParamK[6],navParamK[7],navParamK[8]
+//								,dt);
+//		xQueueSend(xDiskLogQueue, printf_buffer, 0);
 	}
 }
 

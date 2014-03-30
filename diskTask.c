@@ -58,6 +58,7 @@ void vDiskOperation(void* vParameter)
 	u16 index;
 	s16 check;
 	
+	memset(&optional_param_global, 0, sizeof(OptionalPara));
 	vTaskDelay((portTickType)(300/portTICK_RATE_MS));
 	disk_initialize(0);
 	res=f_mount(0, &fs);

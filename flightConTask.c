@@ -717,9 +717,15 @@ void WriteMotor(OutputType* opt)
 void WaitRCSignal(void)
 {
 	u16 i=0;
+	u8 index;
 
 	while(tim4IC1Width<1800)
 	{
+		/* handle uart parameters */
+		if(xQueueReceive(xUartParaQueue,&index,0) == pdPASS)
+		{
+			ControllerUpdate(index);
+		}
 		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
 	}
 	while(tim4IC1Width>1800)
