@@ -159,39 +159,10 @@ void vINSAligTask(void* pvParameters)
 	
 	portBASE_TYPE xstatus;
 	
-	xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);	//capture an INS frame	 
+	xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);	//capture an INS frame	
 
-#ifdef INS_DEBUG	
-	/*GPS data is not needed in debug mode*/
-	while(gps_validate_cnt++ < GPS_DELAY_CNT+10)
-	{
-		xQueueReceive(AHRSToINSQueue, &a2it, portMAX_DELAY);
-		PutToBuffer(&a2it);
-		baro_height = 0.98*baro_height + 0.02*a2it.height;
-	}
-	
-	navParamK[0] = 0.0;
-	navParamK[1] = 0.0;
-	navParamK[2] = baro_height;
-	navParamK[3] = 0.0;
-	navParamK[4] = 0.0;
-	navParamK[5] = 0.0;
-	navParamK[6] = 0.0;
-	navParamK[7] = 0.0;
-	navParamK[8] = 0.0;
-	
-	x[0]=0.0;
-	x[1]=0.0;
-	x[2]=0.0;
-	x[3]=0.0;
-	x[4]=0.0;
-	x[5]=0.0;
-	x[6]=0.0;
-	x[7]=0.0;
-	x[8]=0.0;
-#else
-	//normol mode
-	Blinks(LED1, 3);
+	string_len = sprintf(printf_buffer, "gathering GPS data\r\n");
+	UartSend(printf_buffer, string_len);
 	/*GPS data is not needed in debug mode*/
 	while(gps_validate_cnt < 20)	//
 	{		
@@ -227,7 +198,7 @@ void vINSAligTask(void* pvParameters)
 	x[6]=0.0;
 	x[7]=0.0;
 	x[8]=0.0;
-#endif	
+
 	xstatus=xTaskCreate(vIEKFProcessTask,(signed portCHAR *)"ins_ekf",configMINIMAL_STACK_SIZE+1024,(void *)NULL,tskIDLE_PRIORITY+1,NULL);
 	if(xstatus!=pdTRUE)
 	{
@@ -243,9 +214,6 @@ void vINSAligTask(void* pvParameters)
  */
 void vIEKFProcessTask(void* pvParameters)
 {
-#ifdef INS_DEBUG
-	u8 cnt=0;
-#endif
 	char printf_buffer[100];
 	u16 string_len;
 	
@@ -279,7 +247,10 @@ void vIEKFProcessTask(void* pvParameters)
 	filter->R[6] = filter->R[0] = optional_param_global.miscel[4];
 	filter->R[24] = filter->R[18] = optional_param_global.miscel[5];
 #endif
+	string_len = sprintf(printf_buffer, "INSEKF start.\r\n");
+	UartSend(printf_buffer, string_len);
 	
+	GPSSetMag_decline(&gdt, 6.1677);
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&cur_a2it,portMAX_DELAY);
 	
@@ -307,22 +278,16 @@ void vIEKFProcessTask(void* pvParameters)
 					, (void *)(&dt)
 					, (void *)(filter->A)
 					, (void *)NULL);
-#ifdef INS_DEBUG
-		if(cnt ++ >=150)
-		{
-			float meas_Err[5]={0.0};
-			cnt = 0;
-			measure[0] = 0.0;
-			measure[1] = 0.0;
-			measure[3] = 0.0;
-			measure[4] = 0.0;
-#else
+
 		if(pdPASS == xQueueReceive(xUartGPSQueue,&gdt,0))
 		{
 			float meas_Err[5]={0.0};
-			GPSGetLocalXY(&gdt, measure, measure+1, measure+3, measure+4, 6.1677);
-#endif		
+			GPSGetLocalXY(&gdt);	
+			measure[0] = gdt.local_pos_N;
+			measure[1] = gdt.local_pos_E;
 			measure[2] = cur_a2it.height;
+			measure[3] = gdt.speed_N;
+			measure[4] = gdt.speed_E;
 			
 			for(i=0;i<5;i++)
 			{
@@ -387,10 +352,10 @@ void vIEKFProcessTask(void* pvParameters)
 					INS_Update(navParamCur,&cur_a2it);
 				}
 			}
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.4f\r\n"
-								,navParamCur[3],navParamCur[4],navParamCur[5]
-								,navParamCur[6],navParamCur[7],navParamCur[8]
-								,filter->P[60]);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+								,gdt.local_pos_N, gdt.local_pos_E
+								,gdt.SPD, gdt.COG
+								,gdt.speed_N, gdt.speed_E);
 			UartSend(printf_buffer, string_len);
 		}
 		if(acc_bias_stable == 1)

@@ -56,15 +56,21 @@ typedef struct
 	float Alti;
 	float SPD;//speed over ground
 	float COG;//course over ground
-//in MXT GPGMV
-	float speedE;
-	float speedN;
-	float speedU;
+	
+	float mag_decline;
+	
+	float local_pos_N;
+	float local_pos_E;
+	
+	float speed_N;
+	float speed_E;
+	float speed_D;
 //type of msg
 	uint8_t type;
 }GPSDataType;
 
 void GPSSetInitPos(GPSDataType *gdt);
-void GPSGetLocalXY(GPSDataType *gdt, float *x, float *y, float *vx, float *vy, float yaw);
+void GPSSetMag_decline(GPSDataType *gdt, float angle);
+void GPSGetLocalXY(GPSDataType *gdt);
 
 #endif

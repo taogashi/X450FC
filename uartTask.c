@@ -400,9 +400,9 @@ void vUartRecTask(void* pvParameters)
 					gpsData.Lati=gmvData.latitude_value;
 					gpsData.Long=gmvData.longitude_value;
 					gpsData.Alti=gmvData.alti;
-					gpsData.speedE = gmvData.speedE;
-					gpsData.speedN = gmvData.speedN;
-					gpsData.speedU = gmvData.speedU;
+					gpsData.speed_E = gmvData.speedE;
+					gpsData.speed_N = gmvData.speedN;
+					gpsData.speed_D = -gmvData.speedU;
 					gpsData.COG=gmvData.azimuth_angle;
 					gpsData.type=GPGMV;
 
