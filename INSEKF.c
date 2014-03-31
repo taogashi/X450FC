@@ -139,6 +139,8 @@ __inline void ReadBufferIndex(AHRS2INSType *a2it, u8 index)
 	a2it->dt  = IMU_delay_buffer[(index)*INS_FRAME_LEN+7];
 }
 
+void INSGPSSetR(float *R, GPSDataType *gdt, u8 dimension);
+
 /*
  * fill INS_delay_buffer
  * wait GPS signal
@@ -247,10 +249,12 @@ void vIEKFProcessTask(void* pvParameters)
 	filter->R[6] = filter->R[0] = optional_param_global.miscel[4];
 	filter->R[24] = filter->R[18] = optional_param_global.miscel[5];
 #endif
+
 	string_len = sprintf(printf_buffer, "INSEKF start.\r\n");
 	UartSend(printf_buffer, string_len);
 	
 	GPSSetMag_decline(&gdt, 6.1677);
+	
 	/*capture an INS frame*/
 	xQueueReceive(AHRSToINSQueue,&cur_a2it,portMAX_DELAY);
 	
@@ -294,6 +298,7 @@ void vIEKFProcessTask(void* pvParameters)
 				meas_Err[i] = measure[i] - navParamK[i];
 			}
 			
+			INSGPSSetR(filter->R, &gdt, filter->measure_dim);
 			/*update*/
 			EKF_update(filter
 						, (void *)meas_Err
@@ -301,9 +306,15 @@ void vIEKFProcessTask(void* pvParameters)
 						, NULL
 						, NULL
 						, NULL);	
-			/*
-			 *correct navParamCur
-			 */
+						
+			/*correct navParameters at time K*/		
+			for(i=0;i<6;i++)
+				navParamK[i] += filter->x[i];			
+			navParamK[6] = filter->x[6];
+			navParamK[7] = filter->x[7];
+			navParamK[8] = filter->x[8];
+			
+			/*correct navParamCur*/
 			if(acc_bias_stable)
 			{
 				for(i=0;i<6;i++)
@@ -311,22 +322,21 @@ void vIEKFProcessTask(void* pvParameters)
 				navParamCur[6] = filter->x[6];
 				navParamCur[7] = filter->x[7];
 				navParamCur[8] = filter->x[8];
+				
+				if(gdt.SPD < 0.5)
+				{
+					for(i=0; i<6; i++)
+						navParamCur[i] = 0.99*navParamCur[i] + 0.01*navParamK[i];
+				}
 			}
-			
-			/*correct navParameters at time K
-			 *reset error state x*/			
-			for(i=0;i<6;i++)
-			{
-				navParamK[i] += filter->x[i];
+						
+			/* reset error state x*/	
+			for(i=0; i<6; i++)
 				filter->x[i] = 0.0;
-			}			
-			navParamK[6] = filter->x[6];
-			navParamK[7] = filter->x[7];
-			navParamK[8] = filter->x[8];		
 			
 			/*when acc bias stable, 
 			 *calculate current navigation parameters*/
-			if(!acc_bias_stable && filter->P[60]<0.0345)
+			if(!acc_bias_stable && filter->P[60]<0.035)
 			{
 				acc_bias_stable = 1;
 				//set init value
@@ -352,11 +362,11 @@ void vIEKFProcessTask(void* pvParameters)
 					INS_Update(navParamCur,&cur_a2it);
 				}
 			}
-			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-								,gdt.local_pos_N, gdt.local_pos_E
-								,gdt.SPD, gdt.COG
-								,gdt.speed_N, gdt.speed_E);
-			UartSend(printf_buffer, string_len);
+//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+//								,gdt.speed_N, gdt.speed_E
+//								,navParamK[3], navParamK[4]
+//								,navParamK[6], navParamK[7]);
+//			UartSend(printf_buffer, string_len);
 		}
 		if(acc_bias_stable == 1)
 		{
@@ -461,5 +471,29 @@ void INS_Update(float *navParam, AHRS2INSType *a2it)
 	navParam[3] += (Cbn[0]*a2it->acc[0] + Cbn[1]*a2it->acc[1] + Cbn[2]*a2it->acc[2])*dt;
 	navParam[4] += (Cbn[3]*a2it->acc[0] + Cbn[4]*a2it->acc[1] + Cbn[5]*a2it->acc[2])*dt;
 	navParam[5] += (Cbn[6]*a2it->acc[0] + Cbn[7]*a2it->acc[1] + Cbn[8]*a2it->acc[2] + GRAVITY)*dt;
+}
+
+void INSGPSSetR(float *R, GPSDataType *gdt, u8 dimension)
+{
+	if(gdt->SPD < 0.2)
+	{
+		R[0] = R[dimension+1] = 2.25;
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 20.0;
+	}
+	else if(gdt->SPD >= 0.2 && gdt->SPD <= 1.0)
+	{
+		R[0] = R[dimension+1] = 2.25 + 5.9375*(gdt->SPD - 0.2);
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 20.0 - 18.75*(gdt->SPD - 0.2);
+	}
+	else if(gdt->SPD > 1.0 && gdt->SPD <=3)
+	{
+		R[0] = R[dimension+1] = 7.0 + 6.5*(gdt->SPD - 1.0);
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 5.0 - 2.48*(gdt->SPD - 1.0);
+	}
+	else
+	{
+		R[0] = R[dimension+1] = 20.0;
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 0.04;
+	}
 }
 
