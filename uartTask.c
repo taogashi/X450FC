@@ -129,9 +129,9 @@ void vUartRecTask(void* pvParameters)
 	u16 index;
 	u16 dummy;
 	
-	GGATypeDef ggaData;
+//	GGATypeDef ggaData;
 	RMCTypeDef rmcData;
-	GMVTypeDef gmvData;
+//	GMVTypeDef gmvData;
 
 	GPSDataType gpsData;
 	VisionDataType vdt;
@@ -324,33 +324,7 @@ void vUartRecTask(void* pvParameters)
 		{
 			memcpy(buffer,uart3Cache2,128);
 			uart3Flag=0;
-			if((keyword=strstr(buffer,"GPGGA")) != NULL)
-			{
-				u16 Checksum=0;
-				u8 N=strlen(keyword);
-				u8 i;
-				u8 CK_A=0;
-				sscanf(keyword,"%*[^*]*%hx",&Checksum);
-				for(i=0;i<N-3;i++)
-				{
-					CK_A^=keyword[i];
-				}
-				if(CK_A==Checksum)
-				{
-					sscanf(keyword,"GPGGA,%[^,],%lf,%c,%lf,%c,%c,%hd,%f,%f,%c,%[^,]"
-							,ggaData.utc_time,&(ggaData.latitude_value),&(ggaData.latitude)
-							,&(ggaData.longitude_value),&(ggaData.longitude),&(ggaData.position_fix_indicator)
-							,&(ggaData.satellites_used),&(ggaData.HDOP),&(ggaData.MSL_altitude),&(ggaData.MSL_unit)
-							,ggaData.other_info);
-					gpsData.Lati=ggaData.latitude_value;
-					gpsData.Long=ggaData.longitude_value;
-					gpsData.Alti=ggaData.MSL_altitude;
-					gpsData.type=GPGGA;
-					if('A'==rmcData.status)
-						xQueueSend(xUartGPSQueue,&gpsData,0);
-				}
-			}
-			else if((keyword=strstr(buffer,"GPRMC")) != NULL)
+			if((keyword=strstr(buffer,"GPRMC")) != NULL)
 			{
 				u16 Checksum=0;
 				u8 N=strlen(keyword);
@@ -375,38 +349,6 @@ void vUartRecTask(void* pvParameters)
 					gpsData.COG=rmcData.azimuth_angle;
 					gpsData.type=GPRMC;
 					if('A'==rmcData.status)
-						xQueueSend(xUartGPSQueue,&gpsData,0);
-				}
-			}
-			else if((keyword=strstr(buffer,"GPGMV")) != NULL)
-			{
-				u16 Checksum=0;
-				u8 N=strlen(keyword);
-				u8 i;
-				u8 CK_A=0;
-				sscanf(keyword,"%*[^*]*%hx",&Checksum);
-				for(i=0;i<N-3;i++)
-				{
-					CK_A^=keyword[i];
-				}
-				if(CK_A==Checksum)
-				{
-					sscanf(keyword,"GPGMV,%[^,],%lf,%c,%lf,%c,%f,%f,%f,%f,%f"
-							,gmvData.utc_time,&(gmvData.latitude_value)
-							,&(gmvData.latitude),&(gmvData.longitude_value)
-							,&(gmvData.longitude),&(gmvData.alti)
-							,&(gmvData.speedE),&(gmvData.speedN)
-							,&(gmvData.speedU),&(gmvData.azimuth_angle));
-					gpsData.Lati=gmvData.latitude_value;
-					gpsData.Long=gmvData.longitude_value;
-					gpsData.Alti=gmvData.alti;
-					gpsData.speed_E = gmvData.speedE;
-					gpsData.speed_N = gmvData.speedN;
-					gpsData.speed_D = -gmvData.speedU;
-					gpsData.COG=gmvData.azimuth_angle;
-					gpsData.type=GPGMV;
-
-					if(gpsData.Lati > 100.0)
 						xQueueSend(xUartGPSQueue,&gpsData,0);
 				}
 			}

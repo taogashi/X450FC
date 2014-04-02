@@ -13,7 +13,7 @@
 #include "flightConTask.h"
 
 /***********************macro definition*************************/
-#define GPS_DELAY_CNT 130
+#define GPS_DELAY_CNT 200
 
 /***********************global variables*************************/
 xQueueHandle INSToFlightConQueue;	//pass the navigation infomation to flight controller
@@ -478,22 +478,22 @@ void INSGPSSetR(float *R, GPSDataType *gdt, u8 dimension)
 	if(gdt->SPD < 0.2)
 	{
 		R[0] = R[dimension+1] = 2.25;
-		R[3*(dimension+1)] = R[4*(dimension+1)] = 20.0;
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 5.0;
 	}
 	else if(gdt->SPD >= 0.2 && gdt->SPD <= 1.0)
 	{
 		R[0] = R[dimension+1] = 2.25 + 5.9375*(gdt->SPD - 0.2);
-		R[3*(dimension+1)] = R[4*(dimension+1)] = 20.0 - 18.75*(gdt->SPD - 0.2);
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 5.0 - 5.625*(gdt->SPD - 0.2);
 	}
 	else if(gdt->SPD > 1.0 && gdt->SPD <=3)
 	{
 		R[0] = R[dimension+1] = 7.0 + 6.5*(gdt->SPD - 1.0);
-		R[3*(dimension+1)] = R[4*(dimension+1)] = 5.0 - 2.48*(gdt->SPD - 1.0);
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 0.5 - 0.205*(gdt->SPD - 1.0);
 	}
 	else
 	{
 		R[0] = R[dimension+1] = 20.0;
-		R[3*(dimension+1)] = R[4*(dimension+1)] = 0.04;
+		R[3*(dimension+1)] = R[4*(dimension+1)] = 0.09;
 	}
 }
 

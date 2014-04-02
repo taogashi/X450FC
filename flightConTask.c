@@ -284,7 +284,7 @@ void vFlyConTask(void* pvParameters)
 		WriteMotor(&opt);
 
 		/************ print message **********************/
-		if(CNT++>=70)
+		if(CNT++>=100)
 		{
 			CNT=0;
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
@@ -312,12 +312,14 @@ void vFlyConTask(void* pvParameters)
 //						, odt.rollOrder*57.3
 //						, odt.pitchOrder*57.3
 //						, cpt.thrust_out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 									, fbvt.pos_x
 									, fbvt.pos_y
-									, fbvt.yaw_angle*57.3
 									, fbvt.pos_z
+									, fbvt.velo_x
+									, fbvt.velo_y
 									, fbvt.velo_z
+									, fbvt.yaw_angle*57.3
 									, cpt.thrust_out);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
