@@ -326,7 +326,7 @@ void vIEKFProcessTask(void* pvParameters)
 				if(gdt.SPD < 0.5)
 				{
 					for(i=0; i<6; i++)
-						navParamCur[i] = 0.99*navParamCur[i] + 0.01*navParamK[i];
+						navParamCur[i] = 0.999*navParamCur[i] + 0.001*navParamK[i];
 				}
 			}
 						
@@ -362,11 +362,11 @@ void vIEKFProcessTask(void* pvParameters)
 					INS_Update(navParamCur,&cur_a2it);
 				}
 			}
-//			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f\r\n"
-//								,gdt.speed_N, gdt.speed_E
-//								,navParamK[3], navParamK[4]
-//								,navParamK[6], navParamK[7]);
-//			UartSend(printf_buffer, string_len);
+			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f %.3f\r\n"
+								,gdt.speed_N, gdt.speed_E
+								,navParamK[3], navParamK[4]
+								,navParamK[6], navParamK[7], dt);
+			UartSend(printf_buffer, string_len);
 		}
 		if(acc_bias_stable == 1)
 		{

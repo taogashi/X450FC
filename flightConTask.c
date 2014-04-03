@@ -339,7 +339,7 @@ void vFlyConTask(void* pvParameters)
 //									, tim4IC2Width
 //									, tim4IC3Width
 //									, tim4IC4Width);
-			UartSend(printf_buffer,string_len);
+//			UartSend(printf_buffer,string_len);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(3/portTICK_RATE_MS));
 	}
