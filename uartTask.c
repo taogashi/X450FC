@@ -134,7 +134,7 @@ void vUartRecTask(void* pvParameters)
 //	GMVTypeDef gmvData;
 
 	GPSDataType gpsData;
-	VisionDataType vdt;
+//	VisionDataType vdt;
 	
 	WayPointType wpt;
 
