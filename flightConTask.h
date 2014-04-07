@@ -2,6 +2,7 @@
 #define _FLIGHTCONTASK_H_
 
 #include "stm32f4xx.h"
+#include "OSConfig.h"
 
 #define POS_LOOP_DIVIDER	16
 #define VELO_LOOP_DIVIDER	8
@@ -115,6 +116,7 @@ typedef struct{
 }WayPointType;
 
 extern OptionalPara optional_param_global;
+extern xQueueHandle state_report_queue;
 
 s32 CalChecksum(OptionalPara* OP);
 void vFlyConTask(void* pvParameters);

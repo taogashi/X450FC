@@ -150,15 +150,11 @@ void vUartRecTask(void* pvParameters)
 		{
 			memcpy(buffer,uart2Cache2,100);
 			uart2Flag=0;
-			/******************* checking pos data **********************/
-			if((keyword=strstr(buffer, "POS")) != NULL)
+			/********************  checking heartbeat hello *****************/
+			if((keyword=strstr(buffer,"hello")) != NULL)
 			{
-				sscanf(keyword,"POS,%hd,%hd,%hd,%hd"
-						,&(vdt.pos_x),&(vdt.pos_y),&(vdt.pos_z),&(vdt.chksm));
-				if(vdt.pos_x + vdt.pos_y + vdt.pos_z == vdt.chksm)
-				{
-					xQueueSend(xUartVisionQueue, &vdt, 0);
-				}
+				xQueueReceive(state_report_queue, buffer, 0);
+				UartSend(buffer, strlen(buffer));
 			}
 			/********************  checking PID *************************/
 			else if((keyword=strstr(buffer,"PID")) != NULL)
@@ -353,7 +349,7 @@ void vUartRecTask(void* pvParameters)
 				}
 			}
 		}
-		vTaskDelay((portTickType)(10/portTICK_RATE_MS));
+		vTaskDelay((portTickType)(20/portTICK_RATE_MS));
 	}
 }
 

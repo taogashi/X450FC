@@ -22,6 +22,7 @@ const char* WAYPOINT_FORMAT_IN="Waypoint,%hd,%hd,%hd,%hd,%d,%d,%d,%d";
 const char* WAYPOINT_FORMAT_OUT="Waypoint,%d,%d,%d,%d,%d,%d,%d,%d\r\n";
 
 OptionalPara optional_param_global;
+xQueueHandle state_report_queue;
 
 /*********************************** private data************************************/
 struct system_level_ctrler{
@@ -77,7 +78,7 @@ void vFlyConTask(void* pvParameters)
 {
 	//for print
 	char printf_buffer[100];
-	u16 string_len;
+//	u16 string_len;
 	u8 CNT=0;
 	
 	u8 pos_loop_cnt = 0;
@@ -312,15 +313,16 @@ void vFlyConTask(void* pvParameters)
 //						, odt.rollOrder*57.3
 //						, odt.pitchOrder*57.3
 //						, cpt.thrust_out);
-			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+			sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
 									, fbvt.pos_x
 									, fbvt.pos_y
 									, fbvt.pos_z
 									, fbvt.velo_x
 									, fbvt.velo_y
 									, fbvt.velo_z
-									, fbvt.yaw_angle*57.3
-									, cpt.thrust_out);
+									, fbvt.roll_angle*57.3
+									, fbvt.pitch_angle*57.3
+									, fbvt.yaw_angle*57.3);
 //			string_len = sprintf(printf_buffer, "%.2f %.2f %.2f\r\n", adt.rollAngle*57.3, adt.pitchAngle*57.3, adt.yawAngle*57.3);
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f\r\n"
 //									, cpt.thrust_out
@@ -340,6 +342,7 @@ void vFlyConTask(void* pvParameters)
 //									, tim4IC3Width
 //									, tim4IC4Width);
 //			UartSend(printf_buffer,string_len);
+			xQueueSend(state_report_queue, printf_buffer, 0);
 		}
 		vTaskDelayUntil(&lastTime,(portTickType)(3/portTICK_RATE_MS));
 	}

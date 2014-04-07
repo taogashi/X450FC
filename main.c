@@ -155,6 +155,8 @@ void InitAllQueue(void)
 	xUartParaQueue = xQueueCreate(1, sizeof(u16));			//uart task reveive the parameters
 	xUartWayPointQueue = xQueueCreate(5,sizeof(WayPointType));	//uart task send waypoint to flightConTask
 	
+	state_report_queue = xQueueCreate(1,64);
+	
 	
 	/*read sensor data and send to other tasks*/
 	xSenToAhrsQueue = xQueueCreate(1,sizeof(SensorDataType));
