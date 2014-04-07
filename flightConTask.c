@@ -18,7 +18,7 @@ const char* MISCEL_FORMAT_IN = "Miscel,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
 const char* MISCEL_FORMAT_OUT = "set Miscel,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n";
 const char* NEUTRAL_FORMAT_IN="Neutral,%hd,%hd,%hd,%hd";
 const char* NEUTRAL_FORMAT_OUT="set Neutral para: %d,%d,%d,%d\r\n";
-const char* WAYPOINT_FORMAT_IN="Waypoint,%hd,%hd,%hd,%hd,%d,%d,%d,%d";
+const char* WAYPOINT_FORMAT_IN="Waypoint,%hd,%hd,%hd,%hd,%hd,%d,%d,%d";
 const char* WAYPOINT_FORMAT_OUT="Waypoint,%d,%d,%d,%d,%d,%d,%d,%d\r\n";
 
 OptionalPara optional_param_global;
@@ -314,7 +314,7 @@ void vFlyConTask(void* pvParameters)
 //						, odt.rollOrder*57.3
 //						, odt.pitchOrder*57.3
 //						, cpt.thrust_out);
-			sprintf(printf_buffer,"%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\r\n"
+			sprintf(printf_buffer,"%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n"
 									, fbvt.pos_x
 									, fbvt.pos_y
 									, fbvt.pos_z

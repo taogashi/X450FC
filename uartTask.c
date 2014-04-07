@@ -153,8 +153,8 @@ void vUartRecTask(void* pvParameters)
 			/********************  checking heartbeat hello *****************/
 			if((keyword=strstr(buffer,"hello")) != NULL)
 			{
-				xQueueReceive(state_report_queue, buffer, 0);
-				UartSend(buffer, strlen(buffer));
+				if(pdPASS == xQueueReceive(state_report_queue, buffer, 0))
+					UartSend(buffer, strlen(buffer));
 			}
 			/********************  checking PID *************************/
 			else if((keyword=strstr(buffer,"PID")) != NULL)
