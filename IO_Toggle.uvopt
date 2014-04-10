@@ -375,7 +375,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>169</TopLine>
+      <TopLine>170</TopLine>
       <CurrentLine>172</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\uartTask.c</PathWithFileName>
@@ -391,7 +391,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>332</TopLine>
+      <TopLine>333</TopLine>
       <CurrentLine>343</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\INSEKF.c</PathWithFileName>
@@ -405,10 +405,10 @@
       <FileType>1</FileType>
       <tvExp>1</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>5</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>788</TopLine>
-      <CurrentLine>797</CurrentLine>
+      <TopLine>776</TopLine>
+      <CurrentLine>781</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\User\flightConTask.c</PathWithFileName>
       <FilenameWithoutPath>flightConTask.c</FilenameWithoutPath>
