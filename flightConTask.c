@@ -80,7 +80,7 @@ void vFlyConTask(void* pvParameters)
 	//for print
 	char printf_buffer[100];
 //	u16 string_len;
-	u8 CNT=0;
+	u16 CNT=0;
 	
 	u8 pos_loop_cnt = 0;
 	u8 velo_loop_cnt = 0;
@@ -286,11 +286,11 @@ void vFlyConTask(void* pvParameters)
 		WriteMotor(&opt);
 
 		/************ print message **********************/
-		if(CNT++>=100)
+		if(CNT++>=300)
 		{
 			CNT=0;
 //			string_len = sprintf(printf_buffer,"%.2f %.2f %.2f %.2f\r\n"
-//									, odt.rollOrder
+//									, odt.rollOrder
 //									, odt.pitchOrder
 //									, cpt.roll_moment
 //									, cpt.pitch_moment);
@@ -647,14 +647,14 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 		opt->motor3_Out = 0.0;
 		opt->motor4_Out = 0.0;
 	}
-	else if(cpt->thrust_out>=0.05 && cpt->thrust_out < 0.17)
+	else if(cpt->thrust_out>=0.05 && cpt->thrust_out < 0.20)
 	{
 		opt->motor1_Out = cpt->thrust_out;
 		opt->motor2_Out = cpt->thrust_out;
 		opt->motor3_Out = cpt->thrust_out;
 		opt->motor4_Out = cpt->thrust_out;
 	}
-	else if(cpt->thrust_out >= 0.17 && cpt->thrust_out < 0.80)
+	else if(cpt->thrust_out >= 0.20 && cpt->thrust_out < 0.85)
 	{
 //		opt->motor1_Out = cpt->thrust_out + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
 //		opt->motor2_Out = cpt->thrust_out + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
@@ -665,7 +665,7 @@ void OutputControl(CtrlProcType *cpt, OutputType* opt)
 		opt->motor3_Out = cpt->thrust_out - cpt->pitch_moment - cpt->yaw_moment;
 		opt->motor4_Out = cpt->thrust_out - cpt->roll_moment + cpt->yaw_moment;
 	}
-	else if(cpt->thrust_out >= 0.80)
+	else if(cpt->thrust_out >= 0.85)
 	{
 //		opt->motor1_Out = 0.80 + cpt->roll_moment + cpt->pitch_moment - cpt->yaw_moment;
 //		opt->motor2_Out = 0.80 + cpt->roll_moment - cpt->pitch_moment + cpt->yaw_moment;
@@ -791,8 +791,8 @@ void FeedBack(FeedBackValType *fbvt, AHRSDataType *adt, VerticalType *vt,PosData
 		fbvt->velo_y = pdt->veloY;
 		fbvt->velo_valid |= (VELO_X_VALID | VELO_Y_VALID);
 	}
-	fbvt->velo_valid = 0;
-	fbvt->pos_valid = 0;
+//	fbvt->velo_valid = 0;
+//	fbvt->pos_valid = 0;
 }
 
 void PosLoop(FeedBackValType *fbvt,OrderType *odt, WayPointType *wpt, struct system_level_ctrler *system_ctrler, float dt)
@@ -873,7 +873,11 @@ void HeightLoop(FeedBackValType *fbvt, OrderType *odt, WayPointType *wpt, struct
 		
 //		system_ctrler->height_ctrler.output = (odt->thrustOrder - 0.5)*10;
 		if(odt->thrustOrder <= 0.4)
+//		{
 			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.4)*10;// + system_ctrler->height_ctrler.integ;
+//			if(system_ctrler->height_ctrler.output < -1.0)
+//				system_ctrler->height_ctrler.output = -1.0;
+//		}
 		else
 			system_ctrler->height_ctrler.output = (odt->thrustOrder-0.6)*10;// + system_ctrler->height_ctrler.integ;
 	}
